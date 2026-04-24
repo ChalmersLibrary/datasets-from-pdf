@@ -1,5 +1,5 @@
 # datasets-from-pdf
-Python proof-of-concept app to try and extract data availability information from a published paper in PDF format, by using Ollama LLM and Qwen2.   
+Python proof-of-concept app to ***try*** and extract data availability information from a published paper in PDF format, by using Ollama LLM and Qwen2.   
 
 Currently only processes a single (1) pdf from the CLI.   
 
