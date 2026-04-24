@@ -23,9 +23,11 @@ For each dataset you find, return an object with these fields:
   - created_by_authors:  true if the authors created/generated this dataset
                          in this study, false if they merely reused an
                          existing dataset, null if unclear
-  - source_section:  "data_availability" or "references"
-  - evidence:    short quote (max ~200 chars) from the text that supports
-                 this entry
+  - source_section:  "data_availability_statement" or "references"
+  - is_open: true if the dataset seems to be openly accessible, false otherwise
+  - is_code: true if the dataset seems to be software code, false otherwise
+  - is_supplementary: true if the dataset seems to be supplementary material, false otherwise
+  - evidence: short quote (max ~200 chars) from the text that support this entry
 
 Return ONLY a JSON object of the form:
   { "datasets": [ ... ] }

@@ -19,6 +19,9 @@ class Dataset:
     created_by_authors: Optional[bool]
     source_section: str
     evidence: Optional[str]
+    is_open: Optional[bool]
+    is_code: Optional[bool]
+    is_supplementary: Optional[bool]
 
 
 def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
@@ -33,9 +36,9 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
     if das:
         print(f"[info] Found Data Availability section ({len(das)} chars)",
               file=sys.stderr)
-        result = query_ollama(model, "data_availability", das)
+        result = query_ollama(model, "data_availability_statement", das)
         for d in result.get("datasets", []):
-            d["source_section"] = "data_availability"
+            d["source_section"] = "data_availability_statement"
             all_records.append(d)
     else:
         print("[info] No Data Availability Statement found.", file=sys.stderr)
@@ -65,6 +68,9 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
             created_by_authors=d.get("created_by_authors"),
             source_section=d.get("source_section", "unknown"),
             evidence=d.get("evidence"),
+            is_open=d.get("is_open"),
+            is_code=d.get("is_code"),
+            is_supplementary=d.get("is_supplementary"),
         )
         for d in all_records
     ]
