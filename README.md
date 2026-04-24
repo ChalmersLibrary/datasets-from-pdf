@@ -9,13 +9,13 @@ Python proof-of-concept app to ***try*** and extract data availability informati
      
 **Usage**    
 
-- single PDF
+- single PDF    
 python -m main.py paper.pdf
 
-- batch, JSON files written alongside the PDFs
+- batch, JSON files written alongside the PDFs    
 python -m main.py --batch-dir /pdf_files
 
-- batch, JSON files written to a separate output dir
+- batch, JSON files written to a separate output dir    
 python -m main.py --batch-dir /pdf_files --out /results   
 
 **Arguments**
