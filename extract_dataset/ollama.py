@@ -6,6 +6,7 @@ import requests
 
 
 ollama_url = "http://localhost:11434/api/generate"
+#default_model = "qwen3.5" # or "qwen3.5-mini" for faster but less accurate results
 default_model = "qwen2.5:14b"
 
 prompt = """You extract information about research datasets from
@@ -59,10 +60,17 @@ def query_ollama(model: str, section_name: str, section_text: str,
     r.raise_for_status()
     raw = r.json().get("response", "").strip()
 
+    # Strip <think>…</think> blocks emitted by reasoning models (e.g. qwen3.x).
+    # If nothing remains, the JSON was inside the think block — search there instead.
+    stripped = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+    if not stripped:
+        m = re.search(r"<think>(.*)</think>", raw, re.DOTALL)
+        stripped = m.group(1).strip() if m else raw
+
     try:
-        return json.loads(raw)
+        return json.loads(stripped)
     except json.JSONDecodeError:
-        m = re.search(r"\{.*\}", raw, re.DOTALL)
+        m = re.search(r"\{.*\}", stripped, re.DOTALL)
         if m:
             return json.loads(m.group(0))
         raise ValueError(f"Model did not return valid JSON:\n{raw}")

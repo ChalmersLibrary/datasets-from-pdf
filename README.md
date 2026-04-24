@@ -5,7 +5,7 @@ Currently only processes a single (1) pdf from the CLI.
 
 **Requirements**  
 - Ollama LLM (latest version, installed and running locally or boxed)
-- Model (recommended): qwen2.5:14b (or qwen2.5:7b if running too slow)
+- Model (tested): qwen2.5:14b (or qwen2.5:7b if running too slow)
 - PyMuPDF (for data extraction)
 - Tesseract (recommended, OCR fallback for image PDF:s, require PyMuPDF >= 1.19 - pip install pymupdf --upgrade)
      
@@ -23,5 +23,16 @@ python main.py [PATH]/[PDF_FILE]
 | `--no-references` | Skip scanning the references section |
 | `--out FILE` | Write JSON to this file instead of stdout |
      
-The app will try and extract the text from the PDF (or OCR if text extraction fails). It will try and look for data availability information in Data Availability Statement or References sections (see sections.py) and analyze the results. Response is returned as JSON.   
+The app will try and extract the text from the PDF (or OCR if text extraction fails). It will try and look for data availability information in Data Availability Statement or References sections (see sections.py) and analyze the results. Response is returned as JSON.    
+
+**Response (JSON)**
+
+| Field | Description |  
+| name | short descriptive name of the dataset (string, or null) |
+| repository | where it is hosted, e.g. "Zenodo", "Figshare", "GenBank", "Dryad", "GitHub", "institutional repository" (string, or null) |
+| identifier | DOI, accession number, or similar persistent ID (string, or null) |
+| url | URL (if present) (string, or null) |
+| created_by_authors | true if the authors created/generated this dataset in this study, false if they merely reused an existing dataset, null if unclear |
+| source_section | "data_availability" or "references" |
+| evidence | short quote (max ~200 chars) from the text that supports this entry |
 
