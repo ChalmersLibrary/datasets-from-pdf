@@ -27,7 +27,8 @@ The app will try and extract the text from the PDF (or OCR if text extraction fa
 
 **Response (JSON)**
 
-| Field | Description |  
+| Field | Description |
+|---|---|
 | name | short descriptive name of the dataset (string, or null) |
 | repository | where it is hosted, e.g. "Zenodo", "Figshare", "GenBank", "Dryad", "GitHub", "institutional repository" (string, or null) |
 | identifier | DOI, accession number, or similar persistent ID (string, or null) |
