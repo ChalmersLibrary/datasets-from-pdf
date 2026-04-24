@@ -5,7 +5,7 @@ Python proof-of-concept app to ***try*** and extract data availability informati
 - Ollama LLM (latest version, installed and running locally or boxed)
 - Model (tested): qwen2.5:14b (or qwen2.5:7b, faster but maybe less efficient)
 - PyMuPDF (for data extraction)
-- Tesseract (recommended, OCR fallback for image PDF:s, require PyMuPDF >= 1.19 - pip install pymupdf --upgrade)
+- Tesseract (recommended, OCR fallback for image PDF:s, require PyMuPDF >= 1.19)
      
 **Usage**    
 
@@ -41,8 +41,8 @@ The app will try and extract the text from the PDF (or OCR if text extraction fa
 | url | URL (if present) (string, or null) |
 | created_by_authors | true if the authors created/generated this dataset in this study, false if they merely reused an existing dataset, null if unclear |
 | source_section | "data_availability" or "references" |
-| is_open | true if data that seems to be openly accessible, false otherwise, null if unclear |
+| is_open | true if data seems to be openly accessible, false otherwise, null if unclear |
 | is_code | true if dataset seems to be software code, false otherwise |
-| is_supplementary | true if dataset seems to be spplement to the paper, false otherwise |
+| is_supplementary | true if dataset seems to be a supplement to the paper, false otherwise |
 | evidence | short quote (max ~200 chars) from the text that supports this entry |
 
