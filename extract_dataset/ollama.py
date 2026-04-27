@@ -26,7 +26,7 @@ For each dataset you find, return an object with these fields:
   - source_section:  "data_availability_statement" or "references"
   - is_open: true if the dataset seems to be openly accessible, false otherwise
   - is_code: true if the dataset seems to be software code, false otherwise
-  - is_supplementary: true if the dataset seems to be supplementary material, false otherwise
+  - is_supplementary: true if the dataset seems to be supplementary material to the article, false otherwise
   - evidence: short quote (max ~200 chars) from the text that support this entry
 
 Return ONLY a JSON object of the form:
@@ -52,6 +52,7 @@ def query_ollama(model: str, section_name: str, section_text: str,
         "prompt": user_prompt,
         "stream": False,
         "format": "json",
+        # "think": False,
         "options": {
             "temperature": 0.1,
             "num_ctx": 8192,

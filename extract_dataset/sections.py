@@ -10,6 +10,9 @@ DAS_HEADING_PATTERNS = [
     r"availability\s+of\s+data(?:\s+and\s+materials?)?",
     r"data\s+and\s+code\s+availability",
     r"data\s+access(?:ibility)?",
+    r"data\s+sharing",
+    r"support(?:ing)?+data",
+    r"shared\s+data",
     r"research\s+data",
 ]
 
