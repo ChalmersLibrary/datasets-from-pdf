@@ -62,6 +62,7 @@ python -m main.py --batch-dir /pdf_files --out /results
 | `--batch_dir` | Path to directory containing PDF:s for batch processing |
 | `--out` | Path to output directory (if not current) |
 | `--model MODEL` | Ollama model name (default: `qwen3.5`) |
+| `--enrich-urls` | Try and also extract metadata from found data publications for more correct output (slower) |
 | `--no-ocr` | Disable OCR fallback for image-based pages |
 | `--no-references` | Skip scanning the references section |
      
@@ -74,7 +75,7 @@ python -m main.py --batch-dir /pdf_files --out /results
 | identifier | DOI, accession number, or similar persistent ID (string, or null) |
 | url | URL (if present) (string, or null) |    
 | license | License information (if present) (string, or null) |
-| created_by_authors | true if the authors created/generated this dataset in this study, false if they merely reused an existing dataset, null if unclear |
+| created_by_authors | true if the authors created/generated this dataset in this study, false if they reused an existing dataset, null if unclear |
 | source_section | "data_availability" or "references" |
 | is_open | true if data seems to be openly accessible, false otherwise, null if unclear |
 | is_code | true if dataset seems to be software code, false otherwise |
@@ -84,10 +85,12 @@ python -m main.py --batch-dir /pdf_files --out /results
 **Sample output**   
 
 ```
-% python3 main.py "pdf_files/test.pdf"             
+% python3 main.py "pdf_files/test.pdf --enrich-urls"             
 [info] Extracted 125749 chars from PDF (OCR on 0 page(s))
 [info] Found Data Availability section (3737 chars)
 [info] No References section found.
+[info] Fetching https://doi.org/10.5281/zenodo.123456
+[info] Fetching https://github.com/MeaningOfLifeLab/First_project/
 {
   "pdf": "pdf_files/test.pdf",
   "das_found": true,

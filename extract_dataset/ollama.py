@@ -39,6 +39,67 @@ Do not include any prose, markdown, or code fences — JSON only.
 """
 
 
+enrich_prompt = """You are updating a dataset record that was extracted from a scientific article.
+
+You have:
+1. The current dataset record (JSON)
+2. Text fetched from the dataset's external repository or landing page
+
+Update the record using the fetched page as evidence. Focus on:
+- created_by_authors: check whether the creators listed on the page appear to be the
+  same people as the article authors mentioned in the evidence field. Set true if they
+  seem to match, false if clearly different, null if unclear.
+- license: update if the page states a specific license (e.g. "CC-BY-4.0")
+- is_open: update based on access or availability information on the page
+- name: refine if the page gives a more precise dataset title
+- repository: confirm or correct the repository name
+
+Return ONLY the updated JSON object for this single dataset, using exactly the same
+field names as the input. Do not add new fields. JSON only — no prose, no markdown.
+"""
+
+
+def _parse_json_response(raw: str, fallback: dict | None = None) -> dict:
+    stripped = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+    if not stripped:
+        m = re.search(r"<think>(.*)</think>", raw, re.DOTALL)
+        stripped = m.group(1).strip() if m else raw
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        m = re.search(r"\{.*\}", stripped, re.DOTALL)
+        if m:
+            return json.loads(m.group(0))
+        if fallback is not None:
+            return fallback
+        raise ValueError(f"Model did not return valid JSON:\n{raw}")
+
+
+def enrich_dataset_record(model: str, record: dict, fetched_text: str,
+                           host: str = ollama_url, timeout: int = 300) -> dict:
+    """Re-query Ollama with fetched page content to enrich a single dataset record."""
+    user_prompt = (
+        f"Current dataset record:\n{json.dumps(record, ensure_ascii=False)}\n\n"
+        f"---BEGIN FETCHED PAGE---\n{fetched_text}\n---END FETCHED PAGE---\n\n"
+        "Return the updated dataset record as JSON."
+    )
+    payload = {
+        "model": model,
+        "system": enrich_prompt,
+        "prompt": user_prompt,
+        "stream": False,
+        "format": "json",
+        # Comment the next line if using Qwen2.5x or other models that don't support the "think" tag.
+        "think": False,
+        "options": {"temperature": 0.1, "num_ctx": 8192},
+    }
+    r = requests.post(host, json=payload, timeout=timeout)
+    r.raise_for_status()
+    raw = r.json().get("response", "").strip()
+    enriched = _parse_json_response(raw, fallback=record)
+    return {**record, **enriched}
+
+
 def query_ollama(model: str, section_name: str, section_text: str,
                  host: str = ollama_url, timeout: int = 300) -> dict:
     """Send a section to Ollama and parse the JSON response."""
@@ -65,18 +126,4 @@ def query_ollama(model: str, section_name: str, section_text: str,
     r = requests.post(host, json=payload, timeout=timeout)
     r.raise_for_status()
     raw = r.json().get("response", "").strip()
-
-    # Strip <think>…</think> blocks emitted by reasoning models (e.g. qwen3.x).
-    # If nothing remains, the JSON was inside the think block — search there instead.
-    stripped = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
-    if not stripped:
-        m = re.search(r"<think>(.*)</think>", raw, re.DOTALL)
-        stripped = m.group(1).strip() if m else raw
-
-    try:
-        return json.loads(stripped)
-    except json.JSONDecodeError:
-        m = re.search(r"\{.*\}", stripped, re.DOTALL)
-        if m:
-            return json.loads(m.group(0))
-        raise ValueError(f"Model did not return valid JSON:\n{raw}")
+    return _parse_json_response(raw)

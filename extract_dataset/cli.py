@@ -19,6 +19,7 @@ def _process_one(pdf: Path, args) -> int:
         model=args.model,
         include_references=not args.no_references,
         ocr_fallback=not args.no_ocr,
+        enrich_urls=args.enrich_urls,
     )
 
     output = {
@@ -55,6 +56,8 @@ def main() -> int:
                     help="Disable OCR fallback for image-based pages")
     ap.add_argument("--no-references", action="store_true",
                     help="Skip scanning the references section")
+    ap.add_argument("--enrich-urls", action="store_true",
+                    help="Fetch external URLs/DOIs from results and re-query the model to enrich records")
     ap.add_argument("--out", type=Path, default=None,
                     help="Write JSON to this file (single) or directory (batch) instead of stdout")
     args = ap.parse_args()

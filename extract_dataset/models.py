@@ -7,7 +7,8 @@ from typing import Optional
 
 from .pdf import extract_text
 from .sections import find_data_availability, find_references
-from .ollama import query_ollama, default_model as DEFAULT_MODEL
+from .ollama import query_ollama, enrich_dataset_record, default_model as DEFAULT_MODEL
+from .fetch import resolve_url, fetch_page_text
 
 
 @dataclass
@@ -28,7 +29,8 @@ class Dataset:
 def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
                                include_references: bool = True,
                                ref_char_limit: int = 20000,
-                               ocr_fallback: bool = True) -> tuple[list[Dataset], list[int], bool]:
+                               ocr_fallback: bool = True,
+                               enrich_urls: bool = False) -> tuple[list[Dataset], list[int], bool]:
     text, ocr_pages = extract_text(pdf_path, ocr_fallback=ocr_fallback)
 
     all_records: list[dict] = []
@@ -60,6 +62,16 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
                 all_records.append(d)
         else:
             print("[info] No References section found.", file=sys.stderr)
+
+    if enrich_urls:
+        for i, record in enumerate(all_records):
+            url = resolve_url(record)
+            if not url:
+                continue
+            print(f"[info] Fetching {url}", file=sys.stderr)
+            page_text = fetch_page_text(url)
+            if page_text:
+                all_records[i] = enrich_dataset_record(model, record, page_text)
 
     datasets = [
         Dataset(
