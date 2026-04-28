@@ -14,7 +14,7 @@ def _process_one(pdf: Path, args) -> int:
         print(f"error: {pdf} not found", file=sys.stderr)
         return 1
 
-    datasets, ocr_pages = extract_datasets_from_pdf(
+    datasets, ocr_pages, das_found = extract_datasets_from_pdf(
         pdf,
         model=args.model,
         include_references=not args.no_references,
@@ -23,6 +23,7 @@ def _process_one(pdf: Path, args) -> int:
 
     output = {
         "pdf": str(pdf),
+        "das_found": das_found,
         "ocr_pages": ocr_pages,
         "datasets": [asdict(d) for d in datasets],
     }

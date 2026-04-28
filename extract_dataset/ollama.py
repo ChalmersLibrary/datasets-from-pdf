@@ -6,8 +6,8 @@ import requests
 
 
 ollama_url = "http://localhost:11434/api/generate"
-#default_model = "qwen3.5" # or "qwen3.5-mini" for faster but less accurate results
-default_model = "qwen2.5:14b"
+default_model = "qwen3.5" # or "qwen3.5-mini" for faster but less accurate results
+#default_model = "qwen2.5:14b"
 
 prompt = """You extract information about research datasets from
 excerpts of scientific articles. A "dataset" here means data that the
@@ -15,11 +15,13 @@ authors created, collected, generated, or deposited — or pre-existing
 datasets they explicitly reused.
 
 For each dataset you find, return an object with these fields:
+  - das_found: true if a Data Availability Statement was found in the article, false otherwise
   - name:        short descriptive name of the dataset (string, or null)
   - repository:  where it is hosted, e.g. "Zenodo", "Figshare", "GenBank",
                  "Dryad", "GitHub", "institutional repository" (string, or null)
-  - identifier:  DOI, accession number, or similar persistent ID (string, or null)
+  - identifier:  DOI, accession number, or similar persistent ID, please omit the resolver URL e.g. "https://doi.org/" and only return actual ID, e.g. "10.5281/zenodo.123456" (string, or null)
   - url:         direct URL if given (string, or null)
+  - license:     if a license is mentioned, e.g. "CC-BY-4.0" (string, or null)
   - created_by_authors:  true if the authors created/generated this dataset
                          in this study, false if they merely reused an
                          existing dataset, null if unclear
@@ -52,7 +54,8 @@ def query_ollama(model: str, section_name: str, section_text: str,
         "prompt": user_prompt,
         "stream": False,
         "format": "json",
-        # "think": False,
+        # Comment the next line if using Qwen2.5x or other models that don't support the "think" tag.
+        "think": False,
         "options": {
             "temperature": 0.1,
             "num_ctx": 8192,

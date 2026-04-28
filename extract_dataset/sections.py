@@ -9,11 +9,16 @@ DAS_HEADING_PATTERNS = [
     r"data\s+availability",
     r"availability\s+of\s+data(?:\s+and\s+materials?)?",
     r"data\s+and\s+code\s+availability",
+    r"code\s+and\s+data\s+availability",
     r"data\s+access(?:ibility)?",
     r"data\s+sharing",
     r"support(?:ing)?+data",
     r"shared\s+data",
     r"research\s+data",
+    r"code\s+and\s+data",
+    r"code\s+availability",
+    r"code\s+sharing",
+    r"data\s+and\s+code",
 ]
 
 SECTION_END_PATTERNS = [

@@ -16,6 +16,7 @@ class Dataset:
     repository: Optional[str]
     identifier: Optional[str]
     url: Optional[str]
+    license: Optional[str]
     created_by_authors: Optional[bool]
     source_section: str
     evidence: Optional[str]
@@ -27,12 +28,13 @@ class Dataset:
 def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
                                include_references: bool = True,
                                ref_char_limit: int = 20000,
-                               ocr_fallback: bool = True) -> tuple[list[Dataset], list[int]]:
+                               ocr_fallback: bool = True) -> tuple[list[Dataset], list[int], bool]:
     text, ocr_pages = extract_text(pdf_path, ocr_fallback=ocr_fallback)
 
     all_records: list[dict] = []
 
     das = find_data_availability(text)
+    das_found = bool(das)
     if das:
         print(f"[info] Found Data Availability section ({len(das)} chars)",
               file=sys.stderr)
@@ -65,6 +67,7 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
             repository=d.get("repository"),
             identifier=d.get("identifier"),
             url=d.get("url"),
+            license=d.get("license"),
             created_by_authors=d.get("created_by_authors"),
             source_section=d.get("source_section", "unknown"),
             evidence=d.get("evidence"),
@@ -74,4 +77,4 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
         )
         for d in all_records
     ]
-    return datasets, ocr_pages
+    return datasets, ocr_pages, das_found
