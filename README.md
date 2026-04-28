@@ -10,24 +10,25 @@ Python proof-of-concept app to ***try*** and extract data availability informati
 **Installation**    
 
 - Install Ollama (latest version for your o/s)   
- [download and installation instructions](https://ollama.com/download)   
-- Start Ollama    
+ [download and installation instructions](https://ollama.com/download)  
+
+Start Ollama    
 ```
 ollama serve 
 ```   
-- Download the model   
+Download the model   
 ```
 ollama pull qwen3.5:latest
 ```    
-- Install python dependencies    
+Install python dependencies    
 ```
 pip install pymupdf requests
 ```   
 
-- Install Tesseract (for OCR, recommended)    
+Install Tesseract (for OCR, recommended)    
 [download and installation instructions](https://tesseract-ocr.github.io/tessdoc/Installation.html).    
 
-- Test
+Test
 ``` 
 ollama run qwen3.5 "Please print Hello world! to the screen"
 ```    
