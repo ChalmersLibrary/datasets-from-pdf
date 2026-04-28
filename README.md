@@ -9,7 +9,7 @@ Python proof-of-concept app to ***try*** and extract data availability informati
 
 **Installation**    
 
-- Install Ollama (latest version for your o/s)   
+Install Ollama (latest version for your o/s)   
  [download and installation instructions](https://ollama.com/download)  
 
 Start Ollama    
