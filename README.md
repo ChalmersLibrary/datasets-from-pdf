@@ -100,7 +100,7 @@ The app will try and extract the text from the PDF (or OCR if text extraction fa
       "license": "CC-BY-4.0",
       "created_by_authors": true,
       "source_section": "data_availability_statement",
-      "evidence": "All stimuli recordings and the data that support the ﬁndings of this study are openly available in Zenodo at https://doi.org/10.5281/zenodo.16901844",
+      "evidence": "All stimuli recordings and the data that support the ﬁndings of this study are openly available in Zenodo at https://doi.org/10.5281/zenodo.123456",
       "is_open": true,
       "is_code": false,
       "is_supplementary": false
