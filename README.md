@@ -64,7 +64,7 @@ python -m main.py --batch-dir /pdf_files --out /results
      
 The app will try and extract the text from the PDF (or OCR if text extraction fails). It will try and look for data availability information in Data Availability Statement or References sections (see sections.py) and analyze the results. Response is returned as JSON.    
 
-**Response (JSON)**
+**Response (dataset, JSON)**
 
 | Field | Description |
 |---|---|
@@ -95,14 +95,26 @@ The app will try and extract the text from the PDF (or OCR if text extraction fa
     {
       "name": "Stimuli recordings and study data",
       "repository": "Zenodo",
-      "identifier": "10.5281/zenodo.16901844",
-      "url": "https://doi.org/10.5281/zenodo.16901844",
+      "identifier": "10.5281/zenodo.123456",
+      "url": "https://doi.org/10.5281/zenodo.123456",
       "license": "CC-BY-4.0",
       "created_by_authors": true,
       "source_section": "data_availability_statement",
       "evidence": "All stimuli recordings and the data that support the ﬁndings of this study are openly available in Zenodo at https://doi.org/10.5281/zenodo.16901844",
       "is_open": true,
       "is_code": false,
+      "is_supplementary": false
+    },
+    {
+      "name": "R script for figure generation",
+      "repository": "GitHub",
+      "url": "https://github.com/MeaningOfLifeLab/First_project/",
+      "license": "MIT",
+      "created_by_authors": true,
+      "source_section": "data_availability_statement",
+      "evidence": "R script for ﬁgure generation is also provided in the github repository at https://github.com/MeaningOfLifeLab/First_project/",
+      "is_open": true,
+      "is_code": true,
       "is_supplementary": false
     }
   ]
