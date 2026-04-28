@@ -1,9 +1,12 @@
 # datasets-from-pdf
-Python proof-of-concept app to ***try*** and extract data availability information from a published paper in PDF format, by using Ollama LLM and Qwen3.   
+Proof-of-concept app to ***try*** and extract data availability information from a published paper in PDF format, by using Python, Ollama LLM and Qwen3.  
+
+The app will try and extract the text from the PDF (or OCR if text extraction fails). It will then look for data and/or code information in Data Availability Statement (similair) or References sections (see *sections.py*) and analyze the results. The response is returned as JSON.   
+The prompt can be modified in *ollama.py*.
 
 **Requirements**  
 - Ollama LLM (latest version, installed and running locally or boxed)
-- Models (tested): qwen3.5 (default), qwen2.5:14b (or qwen2.5:7b, faster but maybe less efficient)
+- Model (tested): qwen3.5 (default), qwen2.5:14b (or qwen2.5:7b, faster but maybe less efficient)
 - PyMuPDF (for data extraction)
 - Tesseract (recommended, OCR fallback for image PDF:s, require PyMuPDF >= 1.19).   
 
@@ -62,8 +65,6 @@ python -m main.py --batch-dir /pdf_files --out /results
 | `--no-ocr` | Disable OCR fallback for image-based pages |
 | `--no-references` | Skip scanning the references section |
      
-The app will try and extract the text from the PDF (or OCR if text extraction fails). It will try and look for data availability information in Data Availability Statement or References sections (see sections.py) and analyze the results. Response is returned as JSON.    
-
 **Response (dataset, JSON)**
 
 | Field | Description |
