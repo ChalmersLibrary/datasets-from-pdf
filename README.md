@@ -26,7 +26,7 @@ pip install pymupdf requests
 ```   
 
 Install Tesseract (for OCR, recommended)    
-[download and installation instructions](https://tesseract-ocr.github.io/tessdoc/Installation.html).    
+[download and installation instructions](https://tesseract-ocr.github.io/tessdoc/Installation.html)    
 
 Test
 ``` 
@@ -37,13 +37,19 @@ ollama run qwen3.5 "Please print Hello world! to the screen"
 **Usage**    
 
 - single PDF    
+```
 python -m main.py paper.pdf
+```
 
 - batch, JSON files written alongside the PDFs    
+```
 python -m main.py --batch-dir /pdf_files
+```
 
 - batch, JSON files written to a separate output dir    
+```
 python -m main.py --batch-dir /pdf_files --out /results   
+```
 
 **Arguments**
 
@@ -72,5 +78,34 @@ The app will try and extract the text from the PDF (or OCR if text extraction fa
 | is_open | true if data seems to be openly accessible, false otherwise, null if unclear |
 | is_code | true if dataset seems to be software code, false otherwise |
 | is_supplementary | true if dataset seems to be a supplement to the paper, false otherwise |
-| evidence | short quote (max ~200 chars) from the text that supports this entry |
+| evidence | short quote (max ~200 chars) from the text that supports this entry |    
 
+**Sample output**   
+
+```
+% python3 main.py "pdf_files/test.pdf"             
+[info] Extracted 125749 chars from PDF (OCR on 0 page(s))
+[info] Found Data Availability section (3737 chars)
+[info] No References section found.
+{
+  "pdf": "pdf_files/test.pdf",
+  "das_found": true,
+  "ocr_pages": [],
+  "datasets": [
+    {
+      "name": "Stimuli recordings and study data",
+      "repository": "Zenodo",
+      "identifier": "10.5281/zenodo.16901844",
+      "url": "https://doi.org/10.5281/zenodo.16901844",
+      "license": "CC-BY-4.0",
+      "created_by_authors": true,
+      "source_section": "data_availability_statement",
+      "evidence": "All stimuli recordings and the data that support the ﬁndings of this study are openly available in Zenodo at https://doi.org/10.5281/zenodo.16901844",
+      "is_open": true,
+      "is_code": false,
+      "is_supplementary": false
+    }
+  ]
+}
+```
+ 
