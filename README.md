@@ -93,6 +93,7 @@ python -m main --batch-dir ./pdf_files --out ./results
 [info] Fetching https://github.com/MeaningOfLifeLab/First_project/
 {
   "pdf": "pdf_files/test.pdf",
+  "paper_doi": "10.1016/j.jss.2022.xxx",
   "das_found": true,
   "ocr_pages": [],
   "datasets": [
