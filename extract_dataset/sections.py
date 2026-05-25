@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from typing import Optional
 
-
 DAS_HEADING_PATTERNS = [
     r"data\s+availability\s+statement",
     r"data\s+availability",

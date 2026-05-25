@@ -1,10 +1,8 @@
 from __future__ import annotations
-
 import json
 import re
 import requests
-
-
+    
 ollama_url = "http://localhost:11434/api/generate"
 default_model = "qwen3.5" # or "qwen3.5-mini" for faster but less accurate results
 #default_model = "qwen2.5:14b"
@@ -12,11 +10,11 @@ default_model = "qwen3.5" # or "qwen3.5-mini" for faster but less accurate resul
 prompt = """You extract information about research datasets from
 excerpts of scientific articles. A "dataset" here means data that the
 authors created, collected, generated, or deposited — or pre-existing
-datasets they explicitly reused.
+datasets they explicitly reused. 
 
 For each dataset you find, return an object with these fields:
   - das_found: true if a Data Availability Statement was found in the article, false otherwise
-  - name:        short descriptive name of the dataset (string, or null)
+  - name:        short descriptive name of the dataset (string, or null). If there is a reference - eg. "the ABC dataset [49]" - you can try and find more information in the reference list or text.
   - repository:  where it is hosted, e.g. "Zenodo", "Figshare", "GenBank",
                  "Dryad", "GitHub", "institutional repository" (string, or null)
   - identifier:  DOI, accession number, or similar persistent ID, please omit the resolver URL e.g. "https://doi.org/" and only return actual ID, e.g. "10.5281/zenodo.123456" (string, or null)
@@ -29,7 +27,7 @@ For each dataset you find, return an object with these fields:
   - is_open: true if the dataset seems to be openly accessible, false otherwise
   - is_code: true if the dataset seems to be software code, false otherwise
   - is_supplementary: true if the dataset seems to be supplementary material to the article, false otherwise
-  - evidence: short quote (max ~200 chars) from the text that support this entry
+  - evidence: short quote (max ~200 chars) from the text that support this entry. If there is a reference - eg. "the ABC dataset [49]" - you can try and find more information in the reference list or text.
 
 Return ONLY a JSON object of the form:
   { "datasets": [ ... ] }
