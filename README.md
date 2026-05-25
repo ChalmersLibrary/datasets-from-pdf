@@ -6,7 +6,7 @@ The prompt can be modified in *ollama.py*.
 
 **Requirements**  
 - Ollama LLM (latest version, installed and running locally or boxed)
-- Model (tested): qwen3.5 (default), qwen2.5:14b (or qwen2.5:7b, faster but maybe less efficient)
+- Model (tested): qwen3.5 (default), qwen2.5:14b (or qwen2.5:7b, faster but probably less efficient)
 - PyMuPDF (for data extraction)
 - Tesseract (recommended, OCR fallback for image PDF:s, require PyMuPDF >= 1.19).   
 
@@ -44,7 +44,7 @@ ollama run qwen3.5 "Please print Hello world! to the screen"
 python -m main paper.pdf
 ```
 
-- batch, JSON files written alongside the PDFs    
+- batch, JSON written as output    
 ```
 python -m main --batch-dir ./pdf_files
 ```
@@ -52,8 +52,8 @@ python -m main --batch-dir ./pdf_files
 - batch, JSON files written to a separate output dir    
 ```
 python -m main --batch-dir ./pdf_files --out ./results   
-```
-
+``` 
+    
 **Arguments**
 
 | Argument | Description |
