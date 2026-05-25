@@ -1,12 +1,32 @@
 from __future__ import annotations
 
+import csv
 import json
 import sys
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from pathlib import Path
 
-from .models import extract_datasets_from_pdf
+from .models import Dataset, extract_datasets_from_pdf
 from .ollama import default_model
+
+_DATASET_FIELDS = [f.name for f in fields(Dataset)]
+_CSV_COLUMNS = ["pdf", "paper_doi", "das_found", "ocr_page_count"] + _DATASET_FIELDS
+
+
+def _append_csv_rows(csv_path: Path, pdf: Path, paper_doi: str | None,
+                     das_found: bool, ocr_pages: list[int],
+                     datasets: list[Dataset]) -> None:
+    write_header = not csv_path.exists() or csv_path.stat().st_size == 0
+    with csv_path.open("a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=_CSV_COLUMNS)
+        if write_header:
+            writer.writeheader()
+        base = {"pdf": str(pdf), "paper_doi": paper_doi, "das_found": das_found, "ocr_page_count": len(ocr_pages)}
+        if datasets:
+            for d in datasets:
+                writer.writerow({**base, **asdict(d)})
+        else:
+            writer.writerow({**base, **{k: None for k in _DATASET_FIELDS}})
 
 
 def _process_one(pdf: Path, args) -> int:
@@ -39,6 +59,11 @@ def _process_one(pdf: Path, args) -> int:
         print(f"[info] wrote {out_path}", file=sys.stderr)
     else:
         print(text)
+
+    if args.csv:
+        _append_csv_rows(Path(args.csv), pdf, paper_doi, das_found, ocr_pages, datasets)
+        print(f"[info] appended to {args.csv}", file=sys.stderr)
+
     return 0
 
 
@@ -61,6 +86,8 @@ def main() -> int:
                     help="Fetch external URLs/DOIs from results and re-query the model to enrich records")
     ap.add_argument("--out", type=Path, default=None,
                     help="Write JSON to this file (single) or directory (batch) instead of stdout")
+    ap.add_argument("--csv", type=Path, default=None,
+                    help="Append results to this CSV file (one row per dataset)")
     args = ap.parse_args()
 
     if args.batch_dir and args.pdf:

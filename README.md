@@ -1,7 +1,7 @@
 # datasets-from-pdf
 Proof-of-concept app to ***try*** and extract data availability information from a published paper in PDF format, by using Python, Ollama LLM and Qwen3.  
 
-The app will try and extract the text from the PDF (or OCR if text extraction fails). It will then look for data and/or code information in Data Availability Statement (similair) or References sections (see *sections.py*) and analyze the results. The response is returned as JSON.   
+The app will try and extract the text from the PDF (or OCR if text extraction fails). It will then look for data and/or code information in Data Availability Statement (similair) or References sections (see *sections.py*) and analyze the results. The response is returned as JSON and can also be written to a CSV file (see below).   
 The prompt can be modified in *ollama.py*.
 
 **Requirements**  
@@ -49,6 +49,11 @@ python -m main paper.pdf
 python -m main --batch-dir ./pdf_files
 ```
 
+- batch, output written to a CSV file (JSON to screen)       
+```
+python -m main --batch-dir ./pdf_files --csv ./results/output.csv
+```    
+
 - batch, JSON files written to a separate output dir    
 ```
 python -m main --batch-dir ./pdf_files --out ./results   
@@ -61,6 +66,7 @@ python -m main --batch-dir ./pdf_files --out ./results
 | `pdf` | Path to the PDF file |
 | `--batch_dir` | Path to directory containing PDF:s for batch processing |
 | `--out` | Path to output directory (if not current) |
+| `--csv` | Path to output CSV file (incl. directory + file name) | 
 | `--model MODEL` | Ollama model name (default: `qwen3.5`) |
 | `--enrich-urls` | Try and also extract metadata from found data publications for more correct output (slower) |
 | `--no-ocr` | Disable OCR fallback for image-based pages |
