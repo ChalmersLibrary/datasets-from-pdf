@@ -41,17 +41,17 @@ ollama run qwen3.5 "Please print Hello world! to the screen"
 
 - single PDF    
 ```
-python -m main.py paper.pdf
+python -m main paper.pdf
 ```
 
 - batch, JSON files written alongside the PDFs    
 ```
-python -m main.py --batch-dir /pdf_files
+python -m main --batch-dir ./pdf_files
 ```
 
 - batch, JSON files written to a separate output dir    
 ```
-python -m main.py --batch-dir /pdf_files --out /results   
+python -m main --batch-dir ./pdf_files --out ./results   
 ```
 
 **Arguments**

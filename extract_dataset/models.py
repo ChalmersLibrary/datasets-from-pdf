@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from .pdf import extract_text
-from .sections import find_data_availability, find_references
+from .sections import find_data_availability, find_references, find_paper_doi
 from .ollama import query_ollama, enrich_dataset_record, default_model as DEFAULT_MODEL
 from .fetch import resolve_url, fetch_page_text
 
@@ -30,8 +30,9 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
                                include_references: bool = True,
                                ref_char_limit: int = 20000,
                                ocr_fallback: bool = True,
-                               enrich_urls: bool = False) -> tuple[list[Dataset], list[int], bool]:
+                               enrich_urls: bool = False) -> tuple[list[Dataset], list[int], bool, str | None]:
     text, ocr_pages = extract_text(pdf_path, ocr_fallback=ocr_fallback)
+    paper_doi = find_paper_doi(text)
 
     all_records: list[dict] = []
 
@@ -89,4 +90,4 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
         )
         for d in all_records
     ]
-    return datasets, ocr_pages, das_found
+    return datasets, ocr_pages, das_found, paper_doi

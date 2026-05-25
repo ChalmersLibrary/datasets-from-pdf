@@ -33,7 +33,6 @@ SECTION_END_PATTERNS = [
     r"ethics\s+(approval|statement)",
 ]
 
-
 def _find_section(text: str, start_patterns: list[str],
                   end_patterns: list[str]) -> Optional[str]:
     """Return the substring from the first start heading to the next end heading."""
@@ -65,6 +64,16 @@ def _find_section(text: str, start_patterns: list[str],
 
 def find_data_availability(text: str) -> Optional[str]:
     return _find_section(text, DAS_HEADING_PATTERNS, SECTION_END_PATTERNS)
+
+# Parse and return the DOI of the paper itself, could and should probably be supplied as input instead.
+def find_paper_doi(text: str) -> Optional[str]:
+    """Return the first DOI that looks like the paper's own DOI (from title area)."""
+    # Search the first 3000 chars first (header/title area), then full text
+    for chunk in (text[:3000], text):
+        m = re.search(r"\b(10\.\d{4,}/[^\s,;)\]\"\'<>]+)", chunk)
+        if m:
+            return m.group(1).rstrip(".")
+    return None
 
 
 def find_references(text: str) -> Optional[str]:
