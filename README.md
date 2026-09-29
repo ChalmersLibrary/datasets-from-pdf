@@ -49,7 +49,7 @@ python -m main paper.pdf
 - batch, JSON written as output    
 ```
 python -m main --batch-dir ./pdf_files
-```|
+```
 
 - batch, output written to a CSV file (JSON to screen)       
 ```
