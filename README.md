@@ -100,7 +100,8 @@ python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend lite
 | is_open | true if data seems to be openly accessible, false otherwise, null if unclear |
 | is_code | true if dataset seems to be software code, false otherwise |
 | is_supplementary | true if dataset seems to be a supplement to the paper, false otherwise |
-| evidence | short quote (max ~200 chars) from the text that supports this entry |    
+| notes | short quote (max ~200 chars) from the text that supports this entry |
+| vlm | model used for the extraction, e.g. "qwen3.5" (string) |    
 
 **Sample output**   
 
@@ -125,7 +126,7 @@ python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend lite
       "license": "CC-BY-4.0",
       "created_by_authors": true,
       "source_section": "data_availability_statement",
-      "evidence": "All stimuli recordings and the data that support the ﬁndings of this study are openly available in Zenodo at https://doi.org/10.5281/zenodo.123456",
+      "notes": "All stimuli recordings and the data that support the ﬁndings of this study are openly available in Zenodo at https://doi.org/10.5281/zenodo.123456",
       "is_open": true,
       "is_code": false,
       "is_supplementary": false
@@ -137,7 +138,7 @@ python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend lite
       "license": "MIT",
       "created_by_authors": true,
       "source_section": "data_availability_statement",
-      "evidence": "R script for ﬁgure generation is also provided in the github repository at https://github.com/MeaningOfLifeLab/First_project/",
+      "notes": "R script for ﬁgure generation is also provided in the github repository at https://github.com/MeaningOfLifeLab/First_project/",
       "is_open": true,
       "is_code": true,
       "is_supplementary": false

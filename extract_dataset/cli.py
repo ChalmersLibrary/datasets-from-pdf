@@ -11,12 +11,12 @@ from .ollama import default_model
 from .litellm_api import default_model as litellm_default_model
 
 _DATASET_FIELDS = [f.name for f in fields(Dataset)]
-_CSV_COLUMNS = ["file", "paper_doi", "das_found", "ocr_page_count"] + _DATASET_FIELDS
+_CSV_COLUMNS = ["file", "paper_doi", "das_found", "ocr_page_count"] + _DATASET_FIELDS + ["vlm"]
 
 
 def _append_csv_rows(csv_path: Path, pdf: Path, paper_doi: str | None,
                      das_found: bool, ocr_pages: list[int],
-                     datasets: list[Dataset]) -> None:
+                     datasets: list[Dataset], vlm: str) -> None:
     write_header = not csv_path.exists() or csv_path.stat().st_size == 0
     with csv_path.open("a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=_CSV_COLUMNS)
@@ -25,9 +25,9 @@ def _append_csv_rows(csv_path: Path, pdf: Path, paper_doi: str | None,
         base = {"file": pdf.name, "paper_doi": paper_doi, "das_found": das_found, "ocr_page_count": len(ocr_pages)}
         if datasets:
             for d in datasets:
-                writer.writerow({**base, **asdict(d)})
+                writer.writerow({**base, **asdict(d), "vlm": vlm})
         else:
-            writer.writerow({**base, **{k: None for k in _DATASET_FIELDS}})
+            writer.writerow({**base, **{k: None for k in _DATASET_FIELDS}, "vlm": vlm})
 
 
 def _process_one(pdf: Path, args) -> int:
@@ -49,7 +49,7 @@ def _process_one(pdf: Path, args) -> int:
         "paper_doi": paper_doi,
         "das_found": das_found,
         "ocr_pages": ocr_pages,
-        "datasets": [asdict(d) for d in datasets],
+        "datasets": [{**asdict(d), "vlm": args.model} for d in datasets],
     }
     text = json.dumps(output, indent=2, ensure_ascii=False)
 
@@ -63,7 +63,7 @@ def _process_one(pdf: Path, args) -> int:
         print(text)
 
     if args.csv:
-        _append_csv_rows(Path(args.csv), pdf, paper_doi, das_found, ocr_pages, datasets)
+        _append_csv_rows(Path(args.csv), pdf, paper_doi, das_found, ocr_pages, datasets, args.model)
         print(f"[info] appended to {args.csv}", file=sys.stderr)
 
     return 0

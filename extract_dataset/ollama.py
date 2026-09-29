@@ -27,7 +27,7 @@ For each dataset you find, return an object with these fields:
   - is_open: true if the dataset seems to be openly accessible, false otherwise
   - is_code: true if the dataset seems to be software code, false otherwise
   - is_supplementary: true if the dataset seems to be supplementary material to the article, false otherwise
-  - evidence: short quote (max ~200 chars) from the text that support this entry. If there is a reference - eg. "the ABC dataset [49]" - you can try and find more information in the reference list or text.
+  - notes: short quote (max ~200 chars) from the text that support this entry. If there is a reference - eg. "the ABC dataset [49]" - you can try and find more information in the reference list or text.
 
 Return ONLY a JSON object of the form:
   { "datasets": [ ... ] }
@@ -43,9 +43,9 @@ You have:
 1. The current dataset record (JSON)
 2. Text fetched from the dataset's external repository or landing page
 
-Update the record using the fetched page as evidence. Focus on:
+Update the record using the fetched page as evidence (notes). Focus on:
 - created_by_authors: check whether the creators listed on the page appear to be the
-  same people as the article authors mentioned in the evidence field. Set true if they
+  same people as the article authors mentioned in the notes (evidence) field. Set true if they
   seem to match, false if clearly different, null if unclear.
 - license: update if the page states a specific license (e.g. "CC-BY-4.0")
 - is_open: update based on access or availability information on the page
