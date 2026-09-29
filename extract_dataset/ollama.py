@@ -1,11 +1,11 @@
 from __future__ import annotations
 import json
+import os
 import re
 import requests
     
 ollama_url = "http://localhost:11434/api/generate"
-default_model = "qwen3.5" # or "qwen3.5-mini" for faster but less accurate results
-#default_model = "qwen2.5:14b"
+default_model = os.environ.get("VLM_MODEL", "qwen3.5:latest")
 
 prompt = """You extract information about research datasets from
 excerpts of scientific articles. A "dataset" here means data that the

@@ -1,16 +1,18 @@
 # datasets-from-pdf
-Proof-of-concept app to ***try*** and extract data availability information from a published paper in PDF format, by using Python, Ollama LLM and Qwen3.  
+Proof-of-concept app to ***try*** and extract data availability information from a published paper in PDF format, by using Python, [Ollama LLM](https://ollama.com/) and/or a [LiteLLM API](https://docs.litellm.ai/docs/) chatbot. Using another (external) API would work, but might require some changes to the code.      
 
 The app will try and extract the text from the PDF (or OCR if text extraction fails). It will then look for data and/or code information in Data Availability Statement (similair) or References sections (see *sections.py*) and analyze the results. The response is returned as JSON and can also be written to a CSV file (see below).   
 The prompt can be modified in *ollama.py*.
 
 **Requirements**  
-- Ollama LLM (latest version, installed and running locally or boxed)
-- Model (tested): qwen3.5 (default), qwen2.5:14b (or qwen2.5:7b, faster but probably less efficient)
+- Ollama LLM (latest version, installed and running locally or boxed)   
+*or*   
+- Access to a LiteLLM API service (hosting a suitable model)
+- Model (tested): qwen3.5 (default), qwen3.6-35B (better, but much bigger) (or qwen2.M5:7b, faster but probably less efficient)
 - PyMuPDF (for data extraction)
 - Tesseract (recommended, OCR fallback for image PDF:s, require PyMuPDF >= 1.19).   
 
-**Installation**    
+**Installation (Ollama)**    
 
 Install Ollama (latest version for your o/s)   
  [download and installation instructions](https://ollama.com/download)  
@@ -47,7 +49,7 @@ python -m main paper.pdf
 - batch, JSON written as output    
 ```
 python -m main --batch-dir ./pdf_files
-```
+```|
 
 - batch, output written to a CSV file (JSON to screen)       
 ```
@@ -58,12 +60,23 @@ python -m main --batch-dir ./pdf_files --csv ./results/output.csv
 ```
 python -m main --batch-dir ./pdf_files --out ./results   
 ``` 
+
+- use the LiteLLM API     
+```
+python -m main paper.pdf --backend litellm      
+```   
+
+- batch LiteLLM, output written to a CSV file (JSON to screen)       
+```
+python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend litellm    
+```    
     
 **Arguments**
 
 | Argument | Description |
 |---|---|
 | `pdf` | Path to the PDF file |
+| `--backend` | default: ollama, use *litellm* to use the LiteLLM version |    
 | `--batch_dir` | Path to directory containing PDF:s for batch processing |
 | `--out` | Path to output directory (if not current) |
 | `--csv` | Path to output CSV file (incl. directory + file name) | 
@@ -75,7 +88,8 @@ python -m main --batch-dir ./pdf_files --out ./results
 **Response (dataset, JSON)**
 
 | Field | Description |
-|---|---|
+|---|---|    
+| file | PDF file name (string) |   
 | name | short descriptive name of the dataset (string, or null) |
 | repository | where it is hosted, e.g. "Zenodo", "Figshare", "GenBank", "Dryad", "GitHub", "institutional repository" (string, or null) |
 | identifier | DOI, accession number, or similar persistent ID (string, or null) |
@@ -91,7 +105,7 @@ python -m main --batch-dir ./pdf_files --out ./results
 **Sample output**   
 
 ```
-% python3 main.py "pdf_files/test.pdf --enrich-urls"             
+% python -m main "pdf_files/test.pdf --enrich-urls"             
 [info] Extracted 125749 chars from PDF (OCR on 0 page(s))
 [info] Found Data Availability section (3737 chars)
 [info] No References section found.

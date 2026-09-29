@@ -8,9 +8,10 @@ from pathlib import Path
 
 from .models import Dataset, extract_datasets_from_pdf
 from .ollama import default_model
+from .litellm_api import default_model as litellm_default_model
 
 _DATASET_FIELDS = [f.name for f in fields(Dataset)]
-_CSV_COLUMNS = ["pdf", "paper_doi", "das_found", "ocr_page_count"] + _DATASET_FIELDS
+_CSV_COLUMNS = ["file", "paper_doi", "das_found", "ocr_page_count"] + _DATASET_FIELDS
 
 
 def _append_csv_rows(csv_path: Path, pdf: Path, paper_doi: str | None,
@@ -21,7 +22,7 @@ def _append_csv_rows(csv_path: Path, pdf: Path, paper_doi: str | None,
         writer = csv.DictWriter(f, fieldnames=_CSV_COLUMNS)
         if write_header:
             writer.writeheader()
-        base = {"pdf": str(pdf), "paper_doi": paper_doi, "das_found": das_found, "ocr_page_count": len(ocr_pages)}
+        base = {"file": pdf.name, "paper_doi": paper_doi, "das_found": das_found, "ocr_page_count": len(ocr_pages)}
         if datasets:
             for d in datasets:
                 writer.writerow({**base, **asdict(d)})
@@ -40,10 +41,11 @@ def _process_one(pdf: Path, args) -> int:
         include_references=not args.no_references,
         ocr_fallback=not args.no_ocr,
         enrich_urls=args.enrich_urls,
+        backend=args.backend,
     )
 
     output = {
-        "pdf": str(pdf),
+        "file": pdf.name,
         "paper_doi": paper_doi,
         "das_found": das_found,
         "ocr_pages": ocr_pages,
@@ -76,8 +78,11 @@ def main() -> int:
                     help="Path to the PDF file")
     ap.add_argument("--batch-dir", type=Path, default=None,
                     help="Process all PDFs in this directory")
-    ap.add_argument("--model", default=default_model,
-                    help=f"Ollama model name (default: {default_model})")
+    ap.add_argument("--backend", choices=["ollama", "litellm"], default="ollama",
+                    help="LLM backend: local Ollama or a LiteLLM proxy (default: ollama)")
+    ap.add_argument("--model", default=None,
+                    help=f"Model name (default: {default_model} for ollama, "
+                         f"{litellm_default_model} for litellm)")
     ap.add_argument("--no-ocr", action="store_true",
                     help="Disable OCR fallback for image-based pages")
     ap.add_argument("--no-references", action="store_true",
@@ -89,6 +94,8 @@ def main() -> int:
     ap.add_argument("--csv", type=Path, default=None,
                     help="Append results to this CSV file (one row per dataset)")
     args = ap.parse_args()
+    if args.model is None:
+        args.model = litellm_default_model if args.backend == "litellm" else default_model
 
     if args.batch_dir and args.pdf:
         print("error: specify either a pdf or --batch-dir, not both", file=sys.stderr)

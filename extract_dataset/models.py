@@ -7,7 +7,8 @@ from typing import Optional
 
 from .pdf import extract_text
 from .sections import find_data_availability, find_references, find_paper_doi
-from .ollama import query_ollama, enrich_dataset_record, default_model as DEFAULT_MODEL
+from . import ollama, litellm_api
+from .ollama import default_model as DEFAULT_MODEL
 from .fetch import resolve_url, fetch_page_text
 
 
@@ -30,7 +31,13 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
                                include_references: bool = True,
                                ref_char_limit: int = 20000,
                                ocr_fallback: bool = True,
-                               enrich_urls: bool = False) -> tuple[list[Dataset], list[int], bool, str | None]:
+                               enrich_urls: bool = False,
+                               backend: str = "ollama") -> tuple[list[Dataset], list[int], bool, str | None]:
+    if backend == "litellm":
+        query, enrich_dataset_record = litellm_api.query_litellm, litellm_api.enrich_dataset_record
+    else:
+        query, enrich_dataset_record = ollama.query_ollama, ollama.enrich_dataset_record
+
     text, ocr_pages = extract_text(pdf_path, ocr_fallback=ocr_fallback)
     paper_doi = find_paper_doi(text)
 
@@ -41,7 +48,7 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
     if das:
         print(f"[info] Found Data Availability section ({len(das)} chars)",
               file=sys.stderr)
-        result = query_ollama(model, "data_availability_statement", das)
+        result = query(model, "data_availability_statement", das)
         for d in result.get("datasets", []):
             d["source_section"] = "data_availability_statement"
             all_records.append(d)
@@ -57,7 +64,7 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
                 refs = refs[:ref_char_limit]
             print(f"[info] Scanning References section ({len(refs)} chars)",
                   file=sys.stderr)
-            result = query_ollama(model, "references", refs)
+            result = query(model, "references", refs)
             for d in result.get("datasets", []):
                 d["source_section"] = "references"
                 all_records.append(d)
