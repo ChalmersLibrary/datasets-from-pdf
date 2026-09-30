@@ -1,5 +1,5 @@
 # datasets-from-pdf
-Proof-of-concept app to ***try*** and extract data availability information from a published paper in PDF format, by using Python, [Ollama LLM](https://ollama.com/) and/or a [LiteLLM API](https://docs.litellm.ai/docs/) chatbot. Using another (external) API would work, but might require some changes to the code.      
+Proof-of-concept app to try and extract data availability information from a published paper in PDF format, by using Python, [Ollama LLM](https://ollama.com/) and/or a [LiteLLM API](https://docs.litellm.ai/docs/) chatbot. Using another (external) API would work, but might require some changes to the code.      
 
 The app will try and extract the text from the PDF (or OCR if text extraction fails). It will then look for data and/or code information in Data Availability Statement (similair) or References sections (see *sections.py*) and analyze the results. The response is returned as JSON and can also be written to a CSV file (see below).   
 The prompt can be modified in *ollama.py*.
@@ -8,7 +8,7 @@ The prompt can be modified in *ollama.py*.
 - Ollama LLM (latest version, installed and running locally or boxed)   
 *or*   
 - Access to a LiteLLM API service (hosting a suitable model)
-- Model (tested): qwen3.5 (default), qwen3.6-35B (better, but much bigger) (or qwen2.M5:7b, faster but probably less efficient)
+- Model (tested): qwen3.5 (default), qwen3.6-35B (much better, but require a lot more resources) or qwen2.M5:7b (faster but probably less efficient)
 - PyMuPDF (for data extraction)
 - Tesseract (recommended, OCR fallback for image PDF:s, require PyMuPDF >= 1.19).   
 
