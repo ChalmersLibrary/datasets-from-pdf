@@ -21,7 +21,7 @@ class Dataset:
     license: Optional[str]
     created_by_authors: Optional[bool]
     source_section: str
-    evidence: Optional[str]
+    notes: Optional[str]
     is_open: Optional[bool]
     is_code: Optional[bool]
     is_supplementary: Optional[bool]
@@ -29,7 +29,7 @@ class Dataset:
 
 def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
                                include_references: bool = True,
-                               ref_char_limit: int = 20000,
+                               ref_char_limit: int = 30000,
                                ocr_fallback: bool = True,
                                enrich_urls: bool = False,
                                backend: str = "ollama") -> tuple[list[Dataset], list[int], bool, str | None]:
@@ -90,7 +90,7 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
             license=d.get("license"),
             created_by_authors=d.get("created_by_authors"),
             source_section=d.get("source_section", "unknown"),
-            evidence=d.get("evidence"),
+            notes=d.get("notes"),
             is_open=d.get("is_open"),
             is_code=d.get("is_code"),
             is_supplementary=d.get("is_supplementary"),
