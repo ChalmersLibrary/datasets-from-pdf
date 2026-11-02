@@ -1,5 +1,5 @@
 # datasets-from-pdf
-Proof-of-concept app to try and extract data availability information from a published paper in PDF format, by using Python, [Ollama LLM](https://ollama.com/) and/or a [LiteLLM API](https://docs.litellm.ai/docs/) chatbot. Using another (external) API would work, but might require some changes to the code.      
+Proof-of-concept app to try and extract data availability information from a published paper in PDF format, by using Python, [Ollama LLM](https://ollama.com/) and/or a vLLM - such as [LiteLLM API](https://docs.litellm.ai/docs/) - chatbot. Using another (external) API service would work, but might require some changes to the code.      
 
 The app will try and extract the text from the PDF (or OCR if text extraction fails). It will then look for data and/or code information in Data Availability Statement (similair) or References sections (see *sections.py*) and analyze the results. The response is returned as JSON and can also be written to a CSV file (see below).   
 The prompt can be modified in *ollama.py*.
@@ -7,14 +7,14 @@ The prompt can be modified in *ollama.py*.
 **Requirements**  
 - Ollama LLM (latest version, installed and running locally or boxed)   
 *or*   
-- Access to a LiteLLM API service (hosting a suitable model)
-- Model (tested): qwen3.5 (default), qwen3.6-35B (much better, but require a lot more resources) or qwen2.M5:7b (faster but probably less efficient)
+- Access to a vLLM service (hosting a suitable model)
+- Models (tested): qwen3.5 (default), gemma-4-31B, Qwen3.6-35B (much better, but require a more resources) or qwen2.M5:7b (faster but probably less efficient)
 - PyMuPDF (for data extraction)
 - Tesseract (recommended, OCR fallback for image PDF:s, require PyMuPDF >= 1.19).   
 
 **Installation (Ollama)**    
 
-Install Ollama (latest version for your o/s)   
+Install Ollama (latest version for your o/s, if not using vLLM)   
  [download and installation instructions](https://ollama.com/download)  
 
 Start Ollama    
@@ -46,6 +46,11 @@ ollama run qwen3.5 "Please print Hello world! to the screen"
 python -m main paper.pdf
 ```
 
+- single PDF with vLLM   
+```
+python -m main --backend vllm pdfs/paper.pdf 
+```   
+
 - batch, JSON written as output    
 ```
 python -m main --batch-dir ./pdf_files
@@ -61,14 +66,14 @@ python -m main --batch-dir ./pdf_files --csv ./results/output.csv
 python -m main --batch-dir ./pdf_files --out ./results   
 ``` 
 
-- use the LiteLLM API     
+- use the vLLM API     
 ```
-python -m main paper.pdf --backend litellm      
+python -m main paper.pdf --backend vllm      
 ```   
 
-- batch LiteLLM, output written to a CSV file (JSON to screen)       
+- batch vLLM, output written to a CSV file (JSON to screen)       
 ```
-python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend litellm    
+python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend vllm    
 ```    
     
 **Arguments**
@@ -76,8 +81,8 @@ python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend lite
 | Argument | Description |
 |---|---|
 | `pdf` | Path to the PDF file |
-| `--backend` | default: ollama, use *litellm* to use the LiteLLM version |    
-| `--batch_dir` | Path to directory containing PDF:s for batch processing |
+| `--backend` | default: ollama, use *vllm* to use the vLLM version |    
+| `--batch-dir` | Path to directory containing PDF:s for batch processing |
 | `--out` | Path to output directory (if not current) |
 | `--csv` | Path to output CSV file (incl. directory + file name) | 
 | `--model MODEL` | Ollama model name (default: `qwen3.5`) |

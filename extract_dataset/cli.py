@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .models import Dataset, extract_datasets_from_pdf
 from .ollama import default_model
-from .litellm_api import default_model as litellm_default_model
+from .vllm_api import default_model as vllm_default_model
 
 _DATASET_FIELDS = [f.name for f in fields(Dataset)]
 _CSV_COLUMNS = ["file", "paper_doi", "das_found", "ocr_page_count"] + _DATASET_FIELDS + ["vlm"]
@@ -78,11 +78,11 @@ def main() -> int:
                     help="Path to the PDF file")
     ap.add_argument("--batch-dir", type=Path, default=None,
                     help="Process all PDFs in this directory")
-    ap.add_argument("--backend", choices=["ollama", "litellm"], default="ollama",
-                    help="LLM backend: local Ollama or a LiteLLM proxy (default: ollama)")
+    ap.add_argument("--backend", choices=["ollama", "vllm"], default="ollama",
+                    help="LLM backend: local Ollama or a vLLM (OpenAI-compatible) server (default: ollama)")
     ap.add_argument("--model", default=None,
                     help=f"Model name (default: {default_model} for ollama, "
-                         f"{litellm_default_model} for litellm)")
+                         f"{vllm_default_model} for vllm)")
     ap.add_argument("--no-ocr", action="store_true",
                     help="Disable OCR fallback for image-based pages")
     ap.add_argument("--no-references", action="store_true",
@@ -95,7 +95,7 @@ def main() -> int:
                     help="Append results to this CSV file (one row per dataset)")
     args = ap.parse_args()
     if args.model is None:
-        args.model = litellm_default_model if args.backend == "litellm" else default_model
+        args.model = vllm_default_model if args.backend == "vllm" else default_model
 
     if args.batch_dir and args.pdf:
         print("error: specify either a pdf or --batch-dir, not both", file=sys.stderr)
