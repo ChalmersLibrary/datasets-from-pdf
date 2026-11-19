@@ -2,7 +2,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 import requests
+
+from . import usage
     
 ollama_url = "http://localhost:11434/api/generate"
 default_model = os.environ.get("VLM_MODEL", "qwen3.5:latest")
@@ -73,6 +76,17 @@ def _parse_json_response(raw: str, fallback: dict | None = None) -> dict:
         raise ValueError(f"Model did not return valid JSON:\n{raw}")
 
 
+def _generate(host: str, payload: dict, timeout: int) -> str:
+    """POST to Ollama's /api/generate, record timing/token usage and return the response text."""
+    start = time.perf_counter()
+    r = requests.post(host, json=payload, timeout=timeout)
+    elapsed = time.perf_counter() - start
+    r.raise_for_status()
+    data = r.json()
+    usage.record(elapsed, data.get("prompt_eval_count"), data.get("eval_count"))
+    return (data.get("response") or "").strip()
+
+
 def enrich_dataset_record(model: str, record: dict, fetched_text: str,
                            host: str = ollama_url, timeout: int = 300) -> dict:
     """Re-query Ollama with fetched page content to enrich a single dataset record."""
@@ -91,9 +105,7 @@ def enrich_dataset_record(model: str, record: dict, fetched_text: str,
         "think": False,
         "options": {"temperature": 0.1, "num_ctx": 8192},
     }
-    r = requests.post(host, json=payload, timeout=timeout)
-    r.raise_for_status()
-    raw = r.json().get("response", "").strip()
+    raw = _generate(host, payload, timeout)
     enriched = _parse_json_response(raw, fallback=record)
     return {**record, **enriched}
 
@@ -121,7 +133,5 @@ def query_ollama(model: str, section_name: str, section_text: str,
         },
     }
 
-    r = requests.post(host, json=payload, timeout=timeout)
-    r.raise_for_status()
-    raw = r.json().get("response", "").strip()
+    raw = _generate(host, payload, timeout)
     return _parse_json_response(raw)

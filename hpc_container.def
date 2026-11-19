@@ -1,0 +1,24 @@
+# Take UV based local container image
+Bootstrap: localimage
+From: /apps/containers/uv/uv-0.10.8-python3.14.sif
+
+%post
+    uv pip install --system requests
+    uv pip install --system openpyxl
+    uv pip install --system pymupdf
+
+    # install tesseract
+    apt-get update
+    apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng
+    rm -rf /var/lib/apt/lists/*
+
+    # Tell PyMuPDF where Tesseract's language data is
+    TESSDATA=$(dirname "$(find /usr/share/tesseract-ocr -name eng.traineddata | head -1)")
+    echo "export TESSDATA_PREFIX=$TESSDATA" >> "$APPTAINER_ENVIRONMENT"
+
+    # Install pytesseract for easier calling from python
+    # uv pip install --system pytesseract
+
+%environment
+    export PYTHONUNBUFFERED=1
+

@@ -9,6 +9,7 @@ requires-python = ">=3.11"
 dependencies = [
     "pymupdf>=1.19",
     "requests",
+    "openpyxl",
 ]
 
 [project.scripts]

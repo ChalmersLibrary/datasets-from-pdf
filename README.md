@@ -58,8 +58,18 @@ python -m main --batch-dir ./pdf_files
 
 - batch, output written to a CSV file (JSON to screen)       
 ```
-python -m main --batch-dir ./pdf_files --csv ./results/output.csv
+python -m main --batch-dir ./pdf_files --csv-output ./results/output.csv
 ```    
+
+- batch, output written to an Excel file, no JSON to screen
+```
+python -m main --batch-dir ./pdf_files --xlsx-output ./results/output.xlsx --quiet
+```
+
+- PDFs read from a ZIP file, output written to CSV and Excel
+```
+python -m main --input-zip ./zipdir/my_files.zip --csv-output ./results/output.csv --xlsx-output ./results/output.xlsx
+```
 
 - batch, JSON files written to a separate output dir    
 ```
@@ -73,8 +83,13 @@ python -m main paper.pdf --backend vllm
 
 - batch vLLM, output written to a CSV file (JSON to screen)       
 ```
-python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend vllm    
+python -m main --batch-dir ./pdf_files --csv-output ./results/output.csv --backend vllm    
 ```    
+
+- batch vLLM, files read from ZIP and output written to a MS Excel file (without printing JSON to screen)       
+```
+python -m main --input-zip ./pdf_files/files.zip --xlsx-output ./results/output.xlsx --backend vllm --quite       
+``` 
     
 **Arguments**
 
@@ -83,8 +98,11 @@ python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend vllm
 | `pdf` | Path to the PDF file |
 | `--backend` | default: ollama, use *vllm* to use the vLLM version |    
 | `--batch-dir` | Path to directory containing PDF:s for batch processing |
+| `--input-zip` | Path to a ZIP file containing PDF:s for batch processing (sub-folders included) |
 | `--out` | Path to output directory (if not current) |
-| `--csv` | Path to output CSV file (incl. directory + file name) | 
+| `--csv-output` | Path to output CSV file (incl. directory + file name); appended to if it exists |
+| `--xlsx-output` | Path to output Excel file (incl. directory + file name, `.xlsx`); appended to if it exists |
+| `-q`, `--quiet` | Do not print JSON output to the screen |
 | `--model MODEL` | Ollama model name (default: `qwen3.5`) |
 | `--enrich-urls` | Try and also extract metadata from found data publications for more correct output (slower) |
 | `--no-ocr` | Disable OCR fallback for image-based pages |
@@ -106,9 +124,12 @@ python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend vllm
 | is_code | true if dataset seems to be software code, false otherwise |
 | is_supplementary | true if dataset seems to be a supplement to the paper, false otherwise |
 | notes | short quote (max ~200 chars) from the text that supports this entry |
-| vlm | model used for the extraction, e.g. "qwen3.5" (string) |    
+| vlm | model used for the extraction, e.g. "qwen3.5" (string) |
+| response_time | total seconds spent waiting for the LLM for this paper, summed over all calls (number) |
+| prompt_tokens | total prompt (input) tokens for this paper, summed over all calls (integer, or null if not reported by the server) |
+| completion_tokens | total completion (output) tokens for this paper, summed over all calls (integer, or null if not reported by the server) |    
 
-**Sample output**   
+**Sample output (json, paper)**   
 
 ```
 % python -m main "pdf_files/test.pdf --enrich-urls"             
@@ -122,6 +143,9 @@ python -m main --batch-dir ./pdf_files --csv ./results/output.csv --backend vllm
   "paper_doi": "10.1016/j.jss.2022.xxx",
   "das_found": true,
   "ocr_pages": [],
+  "response_time": "12.2",
+  "prompt_tokens": 2417,
+  "completion_tokens": "658",
   "datasets": [
     {
       "name": "Stimuli recordings and study data",

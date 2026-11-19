@@ -7,7 +7,8 @@ from typing import Optional
 
 from .pdf import extract_text
 from .sections import find_data_availability, find_references, find_paper_doi
-from . import ollama, vllm_api
+from . import ollama, vllm_api, usage
+from .usage import LLMUsage
 from .ollama import default_model as DEFAULT_MODEL
 from .fetch import resolve_url, fetch_page_text
 
@@ -32,12 +33,13 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
                                ref_char_limit: int = 30000,
                                ocr_fallback: bool = True,
                                enrich_urls: bool = False,
-                               backend: str = "ollama") -> tuple[list[Dataset], list[int], bool, str | None]:
+                               backend: str = "ollama") -> tuple[list[Dataset], list[int], bool, str | None, LLMUsage]:
     if backend == "vllm":
         query, enrich_dataset_record = vllm_api.query_vllm, vllm_api.enrich_dataset_record
     else:
         query, enrich_dataset_record = ollama.query_ollama, ollama.enrich_dataset_record
 
+    usage.reset()
     text, ocr_pages = extract_text(pdf_path, ocr_fallback=ocr_fallback)
     paper_doi = find_paper_doi(text)
 
@@ -97,4 +99,4 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
         )
         for d in all_records
     ]
-    return datasets, ocr_pages, das_found, paper_doi
+    return datasets, ocr_pages, das_found, paper_doi, usage.current()
