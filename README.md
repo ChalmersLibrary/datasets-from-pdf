@@ -145,7 +145,7 @@ python -m main --input-zip ./pdf_files/files.zip --xlsx-output ./results/output.
   "ocr_pages": [],
   "response_time": "12.2",
   "prompt_tokens": 2417,
-  "completion_tokens": "658",
+  "completion_tokens": 658,
   "datasets": [
     {
       "name": "Stimuli recordings and study data",
