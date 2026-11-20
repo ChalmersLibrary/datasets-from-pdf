@@ -1,9 +1,9 @@
 from __future__ import annotations
 import os
-import time
-import requests
+import sys
 
 from . import usage
+from .llm_http import post_json
 
 ollama_url = "http://localhost:11434/api/generate"
 default_model = os.environ.get("VLLM_MODEL", "qwen3.5:latest")
@@ -11,12 +11,11 @@ default_model = os.environ.get("VLLM_MODEL", "qwen3.5:latest")
 
 def _generate(host: str, payload: dict, timeout: int) -> str:
     """POST to Ollama's /api/generate, record timing/token usage and return the response text."""
-    start = time.perf_counter()
-    r = requests.post(host, json=payload, timeout=timeout)
-    elapsed = time.perf_counter() - start
-    r.raise_for_status()
-    data = r.json()
+    data, elapsed = post_json(host, payload=payload, timeout=timeout)
     usage.record(elapsed, data.get("prompt_eval_count"), data.get("eval_count"))
+    if data.get("done_reason") == "length":
+        print("[warn] LLM response was cut off at the output token limit; "
+              "the JSON is probably incomplete", file=sys.stderr)
     return (data.get("response") or "").strip()
 
 

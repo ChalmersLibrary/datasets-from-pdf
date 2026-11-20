@@ -103,6 +103,7 @@ python -m main --input-zip ./pdf_files/files.zip --xlsx-output ./results/output.
 | `--csv-output` | Path to output CSV file (incl. directory + file name); appended to if it exists |
 | `--xlsx-output` | Path to output Excel file (incl. directory + file name, `.xlsx`); appended to if it exists |
 | `-q`, `--quiet` | Do not print JSON output to the screen |
+| `--max-consecutive-errors N` | Stop a batch after N PDFs in a row have failed (default: 5, 0 = never stop). A batch also stops at once if the LLM server rejects the API key or model (401/403/404). Temporary errors (timeouts, 429, 5xx) are first retried `VLLM_RETRIES` times (default 4, set in `.env`) |
 | `--model MODEL` | Ollama model name (default: `qwen3.5`) |
 | `--enrich-urls` | Try and also extract metadata from found data publications for more correct output (slower) |
 | `--no-ocr` | Disable OCR fallback for image-based pages |

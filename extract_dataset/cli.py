@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import sys
 import tempfile
 import zipfile
@@ -10,6 +11,7 @@ from pathlib import Path
 
 from .models import Dataset, extract_datasets_from_pdf
 from .usage import LLMUsage
+from .llm_http import FatalLLMError
 from .ollama import default_model
 from .vllm_api import default_model as vllm_default_model
 
@@ -82,7 +84,14 @@ def _append_xlsx_rows(xlsx_path: Path, rows: list[dict]) -> None:
         ws.freeze_panes = "A2"
     for row in rows:
         ws.append([row.get(c) for c in _CSV_COLUMNS])
-    wb.save(xlsx_path)
+    # Save to a temp file and rename it over the original, so a job killed mid-save
+    # (e.g. at the SLURM time limit) never leaves a corrupted workbook behind.
+    tmp = xlsx_path.with_name(f".{xlsx_path.name}.tmp")
+    try:
+        wb.save(tmp)
+        os.replace(tmp, xlsx_path)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def _extract_zip_pdfs(zip_path: Path, dest: Path) -> list[Path]:
@@ -95,8 +104,12 @@ def _extract_zip_pdfs(zip_path: Path, dest: Path) -> list[Path]:
                 continue
             if name.startswith("__MACOSX/") or Path(name).name.startswith("._"):
                 continue
-            # ZipFile.extract sanitises absolute paths and ".." components.
-            pdfs.append(Path(zf.extract(info, dest)))
+            try:
+                # ZipFile.extract sanitises absolute paths and ".." components.
+                pdfs.append(Path(zf.extract(info, dest)))
+            except (zipfile.BadZipFile, RuntimeError, OSError, NotImplementedError) as exc:
+                # RuntimeError: encrypted member; NotImplementedError: unsupported compression
+                print(f"[warn] skipping {name} in ZIP: {exc}", file=sys.stderr)
     return sorted(pdfs, key=lambda p: p.name.lower())
 
 
@@ -175,6 +188,8 @@ def main() -> int:
                     help="Append results to this Excel (.xlsx) file (one row per dataset)")
     ap.add_argument("-q", "--quiet", action="store_true",
                     help="Do not print the JSON output to the screen")
+    ap.add_argument("--max-consecutive-errors", type=int, default=5, metavar="N",
+                    help="Stop a batch after N PDFs in a row have failed (default: 5, 0 = never stop)")
     args = ap.parse_args()
     if args.model is None:
         args.model = vllm_default_model if args.backend == "vllm" else default_model
@@ -190,17 +205,29 @@ def main() -> int:
         print("error: --xlsx-output file must have a .xlsx extension", file=sys.stderr)
         return 1
 
-    # Fail early (before any LLM calls) if an existing output file has the old column layout.
+    # Fail early (before any LLM calls) on problems with the output files.
     try:
+        for path in (args.csv_output, args.xlsx_output):
+            if path:
+                path.parent.mkdir(parents=True, exist_ok=True)
+        if args.out and args.pdf:            # single PDF: --out may be a file in a new folder
+            (args.out if args.out.suffix == "" else args.out.parent).mkdir(parents=True, exist_ok=True)
         if args.csv_output and args.csv_output.exists() and args.csv_output.stat().st_size > 0:
             with args.csv_output.open(newline="", encoding="utf-8") as f:
                 _check_header(args.csv_output, next(csv.reader(f), []))
         if args.xlsx_output and args.xlsx_output.exists() and args.xlsx_output.stat().st_size > 0:
             from openpyxl import load_workbook
-            ws = load_workbook(args.xlsx_output, read_only=True).active
-            _check_header(args.xlsx_output, next(ws.iter_rows(min_row=1, max_row=1, values_only=True), ()))
+            wb = load_workbook(args.xlsx_output, read_only=True)
+            _check_header(args.xlsx_output, next(wb.active.iter_rows(min_row=1, max_row=1, values_only=True), ()))
+            wb.close()
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except ImportError:
+        print("error: --xlsx-output requires openpyxl (pip install openpyxl)", file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"error: cannot use output file: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
 
     if args.input_zip:
@@ -227,20 +254,53 @@ def main() -> int:
             return 0
         return _process_batch(pdfs, args)
 
-    return _process_one(args.pdf, args)
+    try:
+        return _process_one(args.pdf, args)
+    except FatalLLMError as exc:
+        print(f"error: LLM server rejected the request: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:
+        print(f"error: {args.pdf.name}: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
 
 
 def _process_batch(pdfs: list[Path], args) -> int:
     if args.out:
         args.out.mkdir(parents=True, exist_ok=True)
-    errors = 0
+    failed: list[str] = []
+    consecutive = 0
+    rc = 0
+    done = 0
     for i, pdf in enumerate(pdfs, 1):
         print(f"[info] processing {i}/{len(pdfs)}: {pdf.name}", file=sys.stderr)
+        done = i
         try:
-            rc = _process_one(pdf, args)
-            if rc != 0:
-                errors += 1
+            ok = _process_one(pdf, args) == 0
+        except FatalLLMError as exc:
+            # Bad API key, unknown model, wrong URL … every remaining PDF would fail the same way.
+            print(f"error: LLM server rejected the request, stopping batch: {exc}", file=sys.stderr)
+            failed.append(pdf.name)
+            rc = 2
+            break
         except Exception as exc:
-            print(f"error: {pdf.name}: {exc}", file=sys.stderr)
-            errors += 1
-    return 0 if errors == 0 else 1
+            print(f"error: {pdf.name}: {type(exc).__name__}: {exc}", file=sys.stderr)
+            ok = False
+        if ok:
+            consecutive = 0
+            continue
+        failed.append(pdf.name)
+        consecutive += 1
+        if args.max_consecutive_errors and consecutive >= args.max_consecutive_errors:
+            print(f"error: {consecutive} PDFs in a row failed, stopping batch "
+                  f"(see errors above; change with --max-consecutive-errors)", file=sys.stderr)
+            rc = 2
+            break
+
+    skipped = len(pdfs) - done
+    print(f"[info] done: {done - len(failed)} succeeded, {len(failed)} failed"
+          + (f", {skipped} not processed" if skipped else ""), file=sys.stderr)
+    if failed:
+        print("[info] failed files: " + ", ".join(failed), file=sys.stderr)
+    if rc:
+        return rc
+    return 1 if failed else 0

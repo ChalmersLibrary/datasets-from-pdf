@@ -11,6 +11,7 @@ from .pdf import extract_text
 from .sections import find_data_availability, find_references, find_paper_doi
 from . import ollama, vllm_api, usage
 from .usage import LLMUsage
+from .llm_http import FatalLLMError
 from .ollama import default_model as DEFAULT_MODEL
 from .fetch import resolve_url, fetch_page_text
 
@@ -85,7 +86,11 @@ def _enrich_user_prompt(record: dict, fetched_text: str) -> str:
     )
 
 
-def _parse_json_response(raw: str, fallback: dict | None = None) -> dict:
+def _load_json(raw: str):
+    """Parse the model's answer as JSON, tolerating <think> blocks and prose around the JSON.
+
+    Returns the parsed value, or None if no valid JSON could be found.
+    """
     stripped = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
     if not stripped:
         m = re.search(r"<think>(.*)</think>", raw, re.DOTALL)
@@ -93,12 +98,30 @@ def _parse_json_response(raw: str, fallback: dict | None = None) -> dict:
     try:
         return json.loads(stripped)
     except json.JSONDecodeError:
-        m = re.search(r"\{.*\}", stripped, re.DOTALL)
-        if m:
+        pass
+    m = re.search(r"\{.*\}", stripped, re.DOTALL)
+    if m:
+        try:
             return json.loads(m.group(0))
-        if fallback is not None:
-            return fallback
-        raise ValueError(f"Model did not return valid JSON:\n{raw}")
+        except json.JSONDecodeError:
+            pass
+    return None
+
+
+def _short(raw: str, limit: int = 300) -> str:
+    return raw[:limit] + ("…" if len(raw) > limit else "")
+
+
+def _parse_json_response(raw: str, fallback: dict | None = None) -> dict:
+    """Parse the model's answer as a JSON object; return fallback (if given) when that fails."""
+    data = _load_json(raw)
+    if isinstance(data, dict):
+        return data
+    if fallback is not None:
+        print(f"[warn] model did not return a JSON object; keeping previous values. "
+              f"Answer was: {_short(raw)}", file=sys.stderr)
+        return fallback
+    raise ValueError(f"Model did not return a valid JSON object:\n{_short(raw)}")
 
 
 # ---------------------------------------------------------------------------
@@ -112,15 +135,39 @@ _BACKENDS = {
 }
 
 
-def query_section(complete, model: str, section_name: str, section_text: str) -> dict:
-    """Ask the LLM to extract all datasets from one article section."""
+def query_section(complete, model: str, section_name: str, section_text: str) -> list[dict]:
+    """Ask the LLM to extract all datasets from one article section; returns the dataset records."""
     raw = complete(model, EXTRACT_PROMPT, _section_user_prompt(section_name, section_text))
-    return _parse_json_response(raw)
+    data = _load_json(raw)
+    if isinstance(data, list):              # model returned the list without the wrapper object
+        items = data
+    elif isinstance(data, dict):
+        items = data.get("datasets") or []
+    else:
+        raise ValueError(f"Model did not return valid JSON for {section_name}:\n{_short(raw)}")
+    if not isinstance(items, list):
+        print(f"[warn] 'datasets' in model answer is not a list; ignoring it: {_short(raw)}",
+              file=sys.stderr)
+        return []
+    records = [d for d in items if isinstance(d, dict)]
+    if len(records) != len(items):
+        print(f"[warn] skipped {len(items) - len(records)} malformed dataset entr(y/ies) "
+              f"in {section_name}", file=sys.stderr)
+    return records
 
 
 def enrich_record(complete, model: str, record: dict, fetched_text: str) -> dict:
-    """Ask the LLM to update a dataset record using text fetched from its landing page."""
-    raw = complete(model, ENRICH_PROMPT, _enrich_user_prompt(record, fetched_text))
+    """Ask the LLM to update a dataset record using text fetched from its landing page.
+
+    On a non-fatal failure the original record is kept, so one bad enrichment never loses the paper.
+    """
+    try:
+        raw = complete(model, ENRICH_PROMPT, _enrich_user_prompt(record, fetched_text))
+    except FatalLLMError:
+        raise
+    except Exception as exc:
+        print(f"[warn] enrichment failed, keeping original record: {exc}", file=sys.stderr)
+        return record
     enriched = _parse_json_response(raw, fallback=record)
     return {**record, **enriched}
 
@@ -161,8 +208,7 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
     if das:
         print(f"[info] Found Data Availability section ({len(das)} chars)",
               file=sys.stderr)
-        result = query_section(complete, model, "data_availability_statement", das)
-        for d in result.get("datasets", []):
+        for d in query_section(complete, model, "data_availability_statement", das):
             d["source_section"] = "data_availability_statement"
             all_records.append(d)
     else:
@@ -177,8 +223,7 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
                 refs = refs[:ref_char_limit]
             print(f"[info] Scanning References section ({len(refs)} chars)",
                   file=sys.stderr)
-            result = query_section(complete, model, "references", refs)
-            for d in result.get("datasets", []):
+            for d in query_section(complete, model, "references", refs):
                 d["source_section"] = "references"
                 all_records.append(d)
         else:
