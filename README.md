@@ -113,6 +113,7 @@ python -m main --input-zip ./pdf_files/files.zip --xlsx-output ./results/output.
 
 | Field | Description |
 |---|---|    
+| id | sequence number of the PDF in this run (1, 2, 3 …), the same on all rows from one PDF; matches the `processing N/M` log lines (integer) |
 | file | PDF file name (string) |   
 | name | short descriptive name of the dataset (string, or null) |
 | repository | where it is hosted, e.g. "Zenodo", "Figshare", "GenBank", "Dryad", "GitHub", "institutional repository" (string, or null) |
@@ -140,6 +141,7 @@ python -m main --input-zip ./pdf_files/files.zip --xlsx-output ./results/output.
 [info] Fetching https://doi.org/10.5281/zenodo.123456
 [info] Fetching https://github.com/MeaningOfLifeLab/First_project/
 {
+  "id": 1,
   "pdf": "pdf_files/test.pdf",
   "paper_doi": "10.1016/j.jss.2022.xxx",
   "das_found": 1,

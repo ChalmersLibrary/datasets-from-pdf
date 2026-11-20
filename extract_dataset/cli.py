@@ -17,7 +17,7 @@ from .vllm_api import default_model as vllm_default_model
 
 _DATASET_FIELDS = [f.name for f in fields(Dataset)]
 _USAGE_FIELDS = ["response_time", "prompt_tokens", "completion_tokens"]
-_CSV_COLUMNS = ["file", "paper_doi", "das_found", "ocr_page_count"] + _DATASET_FIELDS + ["vlm"] + _USAGE_FIELDS
+_CSV_COLUMNS = ["id", "file", "paper_doi", "das_found", "ocr_page_count"] + _DATASET_FIELDS + ["vlm"] + _USAGE_FIELDS
 
 
 def _bools_to_ints(obj):
@@ -31,14 +31,14 @@ def _bools_to_ints(obj):
     return obj
 
 
-def _result_rows(pdf: Path, paper_doi: str | None, das_found: bool,
+def _result_rows(file_id: int, pdf: Path, paper_doi: str | None, das_found: bool,
                  ocr_pages: list[int], datasets: list[Dataset], vlm: str,
                  llm_usage: LLMUsage) -> list[dict]:
     """One row per dataset (or a single empty row if none were found).
 
     Usage columns are per-paper totals over all LLM calls, repeated on each row.
     """
-    base = {"file": pdf.name, "paper_doi": paper_doi, "das_found": das_found, "ocr_page_count": len(ocr_pages)}
+    base = {"id": file_id, "file": pdf.name, "paper_doi": paper_doi, "das_found": das_found, "ocr_page_count": len(ocr_pages)}
     tail = {"vlm": vlm, **llm_usage.as_dict()}
     if datasets:
         rows = [{**base, **asdict(d), **tail} for d in datasets]
@@ -51,7 +51,7 @@ def _check_header(path: Path, header: list) -> None:
     if list(header) != _CSV_COLUMNS:
         raise RuntimeError(
             f"{path} has different columns than this version writes "
-            f"(e.g. created before the response_time/token columns were added); "
+            f"(it was created by an older version of this tool); "
             f"use a new output file")
 
 
@@ -113,7 +113,8 @@ def _extract_zip_pdfs(zip_path: Path, dest: Path) -> list[Path]:
     return sorted(pdfs, key=lambda p: p.name.lower())
 
 
-def _process_one(pdf: Path, args) -> int:
+def _process_one(pdf: Path, args, file_id: int = 1) -> int:
+    """Process one PDF. file_id is its sequence number in the batch (first output column)."""
     if not pdf.exists():
         print(f"error: {pdf} not found", file=sys.stderr)
         return 1
@@ -128,6 +129,7 @@ def _process_one(pdf: Path, args) -> int:
     )
 
     output = {
+        "id": file_id,
         "file": pdf.name,
         "paper_doi": paper_doi,
         "das_found": das_found,
@@ -147,7 +149,7 @@ def _process_one(pdf: Path, args) -> int:
         print(text)
 
     if args.csv_output or args.xlsx_output:
-        rows = _result_rows(pdf, paper_doi, das_found, ocr_pages, datasets, args.model, llm_usage)
+        rows = _result_rows(file_id, pdf, paper_doi, das_found, ocr_pages, datasets, args.model, llm_usage)
         if args.csv_output:
             _append_csv_rows(args.csv_output, rows)
             print(f"[info] appended to {args.csv_output}", file=sys.stderr)
@@ -275,7 +277,7 @@ def _process_batch(pdfs: list[Path], args) -> int:
         print(f"[info] processing {i}/{len(pdfs)}: {pdf.name}", file=sys.stderr)
         done = i
         try:
-            ok = _process_one(pdf, args) == 0
+            ok = _process_one(pdf, args, file_id=i) == 0
         except FatalLLMError as exc:
             # Bad API key, unknown model, wrong URL … every remaining PDF would fail the same way.
             print(f"error: LLM server rejected the request, stopping batch: {exc}", file=sys.stderr)
