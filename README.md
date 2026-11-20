@@ -118,11 +118,11 @@ python -m main --input-zip ./pdf_files/files.zip --xlsx-output ./results/output.
 | identifier | DOI, accession number, or similar persistent ID (string, or null) |
 | url | URL (if present) (string, or null) |    
 | license | License information (if present) (string, or null) |
-| created_by_authors | true if the authors created/generated this dataset in this study, false if they reused an existing dataset, null if unclear |
+| created_by_authors | 1 if the authors created/generated this dataset in this study, 0 if they reused an existing dataset, null if unclear |
 | source_section | "data_availability" or "references" |
-| is_open | true if data seems to be openly accessible, false otherwise, null if unclear |
-| is_code | true if dataset seems to be software code, false otherwise |
-| is_supplementary | true if dataset seems to be a supplement to the paper, false otherwise |
+| is_open | 1 if data seems to be openly accessible, 0 otherwise, null if unclear |
+| is_code | 1 if dataset seems to be software code, 0 otherwise |
+| is_supplementary | 1 if dataset seems to be a supplement to the paper, 0 otherwise |
 | notes | short quote (max ~200 chars) from the text that supports this entry |
 | vlm | model used for the extraction, e.g. "qwen3.5" (string) |
 | response_time | total seconds spent waiting for the LLM for this paper, summed over all calls (number) |
@@ -141,7 +141,7 @@ python -m main --input-zip ./pdf_files/files.zip --xlsx-output ./results/output.
 {
   "pdf": "pdf_files/test.pdf",
   "paper_doi": "10.1016/j.jss.2022.xxx",
-  "das_found": true,
+  "das_found": 1,
   "ocr_pages": [],
   "response_time": "12.2",
   "prompt_tokens": 2417,
@@ -153,24 +153,24 @@ python -m main --input-zip ./pdf_files/files.zip --xlsx-output ./results/output.
       "identifier": "10.5281/zenodo.123456",
       "url": "https://doi.org/10.5281/zenodo.123456",
       "license": "CC-BY-4.0",
-      "created_by_authors": true,
+      "created_by_authors": 1,
       "source_section": "data_availability_statement",
       "notes": "All stimuli recordings and the data that support the ﬁndings of this study are openly available in Zenodo at https://doi.org/10.5281/zenodo.123456",
-      "is_open": true,
-      "is_code": false,
-      "is_supplementary": false
+      "is_open": 1,
+      "is_code": 0,
+      "is_supplementary": 0
     },
     {
       "name": "R script for figure generation",
       "repository": "GitHub",
       "url": "https://github.com/MeaningOfLifeLab/First_project/",
       "license": "MIT",
-      "created_by_authors": true,
+      "created_by_authors": 1,
       "source_section": "data_availability_statement",
       "notes": "R script for ﬁgure generation is also provided in the github repository at https://github.com/MeaningOfLifeLab/First_project/",
-      "is_open": true,
-      "is_code": true,
-      "is_supplementary": false
+      "is_open": 1,
+      "is_code": 1,
+      "is_supplementary": 0
     }
   ]
 }

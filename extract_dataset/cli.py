@@ -18,6 +18,17 @@ _USAGE_FIELDS = ["response_time", "prompt_tokens", "completion_tokens"]
 _CSV_COLUMNS = ["file", "paper_doi", "das_found", "ocr_page_count"] + _DATASET_FIELDS + ["vlm"] + _USAGE_FIELDS
 
 
+def _bools_to_ints(obj):
+    """Recursively replace True/False with 1/0 (None and other values are left unchanged)."""
+    if isinstance(obj, bool):
+        return int(obj)
+    if isinstance(obj, dict):
+        return {k: _bools_to_ints(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_bools_to_ints(v) for v in obj]
+    return obj
+
+
 def _result_rows(pdf: Path, paper_doi: str | None, das_found: bool,
                  ocr_pages: list[int], datasets: list[Dataset], vlm: str,
                  llm_usage: LLMUsage) -> list[dict]:
@@ -28,8 +39,10 @@ def _result_rows(pdf: Path, paper_doi: str | None, das_found: bool,
     base = {"file": pdf.name, "paper_doi": paper_doi, "das_found": das_found, "ocr_page_count": len(ocr_pages)}
     tail = {"vlm": vlm, **llm_usage.as_dict()}
     if datasets:
-        return [{**base, **asdict(d), **tail} for d in datasets]
-    return [{**base, **{k: None for k in _DATASET_FIELDS}, **tail}]
+        rows = [{**base, **asdict(d), **tail} for d in datasets]
+    else:
+        rows = [{**base, **{k: None for k in _DATASET_FIELDS}, **tail}]
+    return _bools_to_ints(rows)
 
 
 def _check_header(path: Path, header: list) -> None:
@@ -109,7 +122,7 @@ def _process_one(pdf: Path, args) -> int:
         **llm_usage.as_dict(),
         "datasets": [{**asdict(d), "vlm": args.model} for d in datasets],
     }
-    text = json.dumps(output, indent=2, ensure_ascii=False)
+    text = json.dumps(_bools_to_ints(output), indent=2, ensure_ascii=False)
 
     if args.out:
         out_path = Path(args.out)
