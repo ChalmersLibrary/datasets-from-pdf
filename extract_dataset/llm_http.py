@@ -52,7 +52,7 @@ def post_json(url: str, *, payload: dict, headers: dict | None = None,
               timeout: float = 300) -> tuple[dict, float]:
     """POST a JSON payload and return (parsed JSON response, seconds taken by the successful attempt).
 
-    Retries timeouts, connection errors and transient HTTP statuses up to  times.
+    Retries timeouts, connection errors and transient HTTP statuses up to n times.
     Raises FatalLLMError for auth/not-found errors, requests.HTTPError (with the server's
     error message) for other HTTP errors, and ValueError if the response is not JSON.
     """

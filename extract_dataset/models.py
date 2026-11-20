@@ -20,67 +20,131 @@ from .fetch import resolve_url, fetch_page_text
 # Prompts (shared by all LLM backends)
 # ---------------------------------------------------------------------------
 
-EXTRACT_PROMPT = """You extract information about research datasets from
-excerpts of scientific articles. A "dataset" here means data that the
-authors created, collected, generated, or deposited — or pre-existing
-datasets they explicitly reused. 
+EXTRACT_PROMPT = """You extract research datasets from ONE section of a scientific article
+(either its Data Availability Statement or its reference list). You are also given the
+article header (title, authors, affiliations) as context. Do NOT extract datasets from the
+header; use it only to know who the article's authors are. Use only the text you are given.
 
-For each dataset you find, return an object with these fields:
-  - das_found: true if a Data Availability Statement was found in the article, false otherwise
-  - name:        short descriptive name of the dataset (string, or null). If there is a reference - eg. "the ABC dataset [49]" - you can try and find more information in the reference list or text.
-  - repository:  where it is hosted, e.g. "Zenodo", "Figshare", "GenBank",
-                 "Dryad", "GitHub", "institutional repository" (string, or null)
-  - identifier:  DOI, accession number, or similar persistent ID, please omit the resolver URL e.g. "https://doi.org/" and only return actual ID, e.g. "10.5281/zenodo.123456" (string, or null)
-  - url:         direct URL if given (string, or null)
-  - license:     if a license is mentioned, e.g. "CC-BY-4.0" (string, or null)
-  - created_by_authors:  true if the authors created/generated this dataset
-                         in this study, false if they merely reused an
-                         existing dataset, null if unclear
-  - source_section:  "data_availability_statement" or "references"
-  - is_open: true if the dataset seems to be openly accessible, false otherwise
-  - is_code: true if the dataset seems to be software code, false otherwise
-  - is_supplementary: true if the dataset seems to be supplementary material to the article, false otherwise
-  - notes: short quote (max ~200 chars) from the text that support this entry. If there is a reference - eg. "the ABC dataset [49]" - you can try and find more information in the reference list or text.
+INCLUDE
+- Data the authors created, collected, generated or deposited in this study
+  (measurements, survey responses, sequences, images, simulation output, a deposited data package).
+- Specific existing datasets the authors explicitly used: a named database or data collection,
+  or a record with its own DOI or accession number.
+- Code or software the authors themselves wrote and shared for this study (is_code = true).
+- Data stated to be available only on request or under restrictions (is_open = false).
 
-Return ONLY a JSON object of the form:
-  { "datasets": [ ... ] }
+DO NOT INCLUDE
+- Software, tools, packages or libraries the authors only used (e.g. R, Python, SPSS, ImageJ,
+  scikit-learn, QGIS), including links to their websites or GitHub pages.
+- Ordinary journal articles, books, reports or method papers in a reference list, even if they
+  contain data, unless the citation is clearly a dataset: a data repository DOI (Zenodo, Dryad,
+  Figshare, PANGAEA, Mendeley Data, ...), an accession number, or a label such as "[Data set]".
+- The article itself or its DOI, journals, publishers, funders, ethics approvals, trial
+  registrations, protocols, and links to organisations or general web pages.
+- The same dataset twice: merge all mentions of the same data into one entry.
 
-If no datasets are mentioned, return { "datasets": [] }.
-Do not include any prose, markdown, or code fences — JSON only.
+created_by_authors
+- true: the text says the data/code were generated, collected, produced or deposited by the
+  authors for this study ("data generated in this study", "we deposited", "our code"), or the
+  authors offer their own data on request.
+- true: a dataset in the reference list whose creators include one or more of the article's
+  authors (compare with the names in the article header).
+- false: the authors obtained, downloaded, accessed or reused data made by others ("obtained
+  from", "retrieved from", "provided by", "publicly available data from", "we used the X database"),
+  or a cited dataset whose creators are clearly different people from the article's authors.
+- null: when the text does not make it clear. Do not guess.
+
+For each dataset return an object with exactly these fields, in this order:
+  - notes: verbatim quote (max ~200 chars) from the text that supports this entry.
+           Write this first and base all other fields on it.
+  - name: short descriptive name of the dataset (string or null)
+  - repository: where it is hosted, e.g. "Zenodo", "Figshare", "Dryad", "GenBank", "ENA",
+                "PANGAEA", "institutional repository" (string or null)
+  - identifier: DOI, accession number or similar persistent ID without resolver prefix,
+                e.g. "10.5281/zenodo.123456", not "https://doi.org/10.5281/zenodo.123456" (string or null)
+  - url: URL exactly as given in the text (string or null)
+  - license: e.g. "CC-BY-4.0" if stated (string or null)
+  - created_by_authors: true, false or null (see rules above)
+  - is_open: true if openly accessible, false if on request/restricted/embargoed, null if unclear
+  - is_code: true if this is software/code, otherwise false
+  - is_supplementary: true if it is supplementary material published with the article, otherwise false
+
+Never invent names, DOIs, accession numbers or URLs; use null for anything not stated.
+
+EXAMPLE
+Text: "The sequencing data generated in this study have been deposited in ENA under accession
+PRJEB12345. Climate data were obtained from ERA5 (Hersbach et al., 2020). All analyses were run
+in R 4.2 using the vegan package."
+Answer:
+{"datasets": [
+ {"notes": "The sequencing data generated in this study have been deposited in ENA under accession PRJEB12345",
+  "name": "Sequencing data", "repository": "ENA", "identifier": "PRJEB12345", "url": null,
+  "license": null, "created_by_authors": true, "is_open": true, "is_code": false, "is_supplementary": false},
+ {"notes": "Climate data were obtained from ERA5 (Hersbach et al., 2020)",
+  "name": "ERA5 reanalysis", "repository": null, "identifier": null, "url": null,
+  "license": null, "created_by_authors": false, "is_open": true, "is_code": false, "is_supplementary": false}
+]}
+(R and vegan are software the authors only used, so they are not included.)
+
+Return ONLY a JSON object of the form { "datasets": [ ... ] }.
+If there are no datasets, return { "datasets": [] }. No prose, markdown or code fences.
 """
 
 
 ENRICH_PROMPT = """You are updating a dataset record that was extracted from a scientific article.
 
 You have:
-1. The current dataset record (JSON)
-2. Text fetched from the dataset's external repository or landing page
+1. The article header (title, authors, affiliations) of the scientific article
+2. The current dataset record (JSON)
+3. Text fetched from the dataset's external repository or landing page
 
-Update the record using the fetched page as evidence (notes). Focus on:
-- created_by_authors: check whether the creators listed on the page appear to be the
-  same people as the article authors mentioned in the notes (evidence) field. Set true if they
-  seem to match, false if clearly different, null if unclear.
+Update the record using the fetched page as evidence. Focus on:
+- created_by_authors: compare the creators/authors listed on the page with the article's
+  authors in the article header. Set true if one or more of them clearly match, false if
+  they are clearly different people, and keep the current value if the page does not list
+  creators or it is unclear.
 - license: update if the page states a specific license (e.g. "CC-BY-4.0")
 - is_open: update based on access or availability information on the page
 - name: refine if the page gives a more precise dataset title
 - repository: confirm or correct the repository name
+- is_code: set true if the page shows this is software/code (e.g. a code repository)
 
+Never invent values; keep the current value when the page gives no evidence.
 Return ONLY the updated JSON object for this single dataset, using exactly the same
 field names as the input. Do not add new fields. JSON only — no prose, no markdown.
 """
 
+# How much of the start of the article is sent as context (title, authors, affiliations).
+ARTICLE_HEADER_CHARS = 2000
 
-def _section_user_prompt(section_name: str, section_text: str) -> str:
+
+def article_header(text: str, limit: int = ARTICLE_HEADER_CHARS) -> str:
+    """The first part of the article text, which normally holds the title and author list."""
+    return re.sub(r"\s+", " ", text[: limit * 2]).strip()[:limit]
+
+
+def _header_block(header: str) -> str:
+    if not header:
+        return ""
     return (
-        f"Section: {section_name}\n\n"
+        "Article header (context only, do not extract datasets from it):\n"
+        f"---BEGIN HEADER---\n{header}\n---END HEADER---\n\n"
+    )
+
+
+def _section_user_prompt(section_name: str, section_text: str, header: str = "") -> str:
+    return (
+        _header_block(header)
+        + f"Section: {section_name}\n\n"
         f"---BEGIN TEXT---\n{section_text}\n---END TEXT---\n\n"
         "Extract all datasets as specified."
     )
 
 
-def _enrich_user_prompt(record: dict, fetched_text: str) -> str:
+def _enrich_user_prompt(record: dict, fetched_text: str, header: str = "") -> str:
     return (
-        f"Current dataset record:\n{json.dumps(record, ensure_ascii=False)}\n\n"
+        _header_block(header)
+        + f"Current dataset record:\n{json.dumps(record, ensure_ascii=False)}\n\n"
         f"---BEGIN FETCHED PAGE---\n{fetched_text}\n---END FETCHED PAGE---\n\n"
         "Return the updated dataset record as JSON."
     )
@@ -135,9 +199,10 @@ _BACKENDS = {
 }
 
 
-def query_section(complete, model: str, section_name: str, section_text: str) -> list[dict]:
+def query_section(complete, model: str, section_name: str, section_text: str,
+                  header: str = "") -> list[dict]:
     """Ask the LLM to extract all datasets from one article section; returns the dataset records."""
-    raw = complete(model, EXTRACT_PROMPT, _section_user_prompt(section_name, section_text))
+    raw = complete(model, EXTRACT_PROMPT, _section_user_prompt(section_name, section_text, header))
     data = _load_json(raw)
     if isinstance(data, list):              # model returned the list without the wrapper object
         items = data
@@ -156,13 +221,14 @@ def query_section(complete, model: str, section_name: str, section_text: str) ->
     return records
 
 
-def enrich_record(complete, model: str, record: dict, fetched_text: str) -> dict:
+def enrich_record(complete, model: str, record: dict, fetched_text: str,
+                  header: str = "") -> dict:
     """Ask the LLM to update a dataset record using text fetched from its landing page.
 
     On a non-fatal failure the original record is kept, so one bad enrichment never loses the paper.
     """
     try:
-        raw = complete(model, ENRICH_PROMPT, _enrich_user_prompt(record, fetched_text))
+        raw = complete(model, ENRICH_PROMPT, _enrich_user_prompt(record, fetched_text, header))
     except FatalLLMError:
         raise
     except Exception as exc:
@@ -200,6 +266,7 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
     usage.reset()
     text, ocr_pages = extract_text(pdf_path, ocr_fallback=ocr_fallback)
     paper_doi = find_paper_doi(text)
+    header = article_header(text)
 
     all_records: list[dict] = []
 
@@ -208,7 +275,7 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
     if das:
         print(f"[info] Found Data Availability section ({len(das)} chars)",
               file=sys.stderr)
-        for d in query_section(complete, model, "data_availability_statement", das):
+        for d in query_section(complete, model, "data_availability_statement", das, header):
             d["source_section"] = "data_availability_statement"
             all_records.append(d)
     else:
@@ -223,7 +290,7 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
                 refs = refs[:ref_char_limit]
             print(f"[info] Scanning References section ({len(refs)} chars)",
                   file=sys.stderr)
-            for d in query_section(complete, model, "references", refs):
+            for d in query_section(complete, model, "references", refs, header):
                 d["source_section"] = "references"
                 all_records.append(d)
         else:
@@ -237,7 +304,7 @@ def extract_datasets_from_pdf(pdf_path: Path, model: str = DEFAULT_MODEL,
             print(f"[info] Fetching {url}", file=sys.stderr)
             page_text = fetch_page_text(url)
             if page_text:
-                all_records[i] = enrich_record(complete, model, record, page_text)
+                all_records[i] = enrich_record(complete, model, record, page_text, header)
 
     datasets = [
         Dataset(

@@ -2,7 +2,7 @@
 Proof-of-concept app to try and extract data availability information from a published paper in PDF format, by using Python, [Ollama LLM](https://ollama.com/) and/or a vLLM - such as [LiteLLM API](https://docs.litellm.ai/docs/) - chatbot. Using another (external) API service would work, but might require some changes to the code.      
 
 The app will try and extract the text from the PDF (or OCR if text extraction fails). It will then look for data and/or code information in Data Availability Statement (similair) or References sections (see *sections.py*) and analyze the results. The response is returned as JSON and can also be written to a CSV file (see below).   
-The prompts (`EXTRACT_PROMPT` and `ENRICH_PROMPT`) can be modified in *extract_dataset/models.py*; they are used by all backends.
+The prompts (`EXTRACT_PROMPT` and `ENRICH_PROMPT`) can be modified in *extract_dataset/models.py*; they are used by both backends.
 
 **Requirements**  
 - Ollama LLM (latest version, installed and running locally or boxed)   
@@ -103,7 +103,7 @@ python -m main --input-zip ./pdf_files/files.zip --xlsx-output ./results/output.
 | `--csv-output` | Path to output CSV file (incl. directory + file name); appended to if it exists |
 | `--xlsx-output` | Path to output Excel file (incl. directory + file name, `.xlsx`); appended to if it exists |
 | `-q`, `--quiet` | Do not print JSON output to the screen |
-| `--max-consecutive-errors N` | Stop a batch after N PDFs in a row have failed (default: 5, 0 = never stop). A batch also stops at once if the LLM server rejects the API key or model (401/403/404). Temporary errors (timeouts, 429, 5xx) are first retried `VLLM_RETRIES` times (default 4, set in `.env`) |
+| `--max-consecutive-errors N` | Stop a batch after N PDFs in a row have failed (default: 5, 0 = never). A batch also stops at once if the LLM server rejects the API key or model (401/403/404). Temporary errors (timeouts, 429, 5xx) are first retried `VLLM_RETRIES` times (default 4, set in `.env`) |
 | `--model MODEL` | Ollama model name (default: `qwen3.5`) |
 | `--enrich-urls` | Try and also extract metadata from found data publications for more correct output (slower) |
 | `--no-ocr` | Disable OCR fallback for image-based pages |
