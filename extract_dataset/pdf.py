@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import sys
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 from pathlib import Path
 
 

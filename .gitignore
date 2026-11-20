@@ -8,3 +8,5 @@ __pycache__
 *.csv
 *.json
 .DS_Store
+results
+openalex_pdfs
