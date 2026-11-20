@@ -2,7 +2,7 @@
 Proof-of-concept app to try and extract data availability information from a published paper in PDF format, by using Python, [Ollama LLM](https://ollama.com/) and/or a vLLM - such as [LiteLLM API](https://docs.litellm.ai/docs/) - chatbot. Using another (external) API service would work, but might require some changes to the code.      
 
 The app will try and extract the text from the PDF (or OCR if text extraction fails). It will then look for data and/or code information in Data Availability Statement (similair) or References sections (see *sections.py*) and analyze the results. The response is returned as JSON and can also be written to a CSV file (see below).   
-The prompt can be modified in *ollama.py*.
+The prompts (`EXTRACT_PROMPT` and `ENRICH_PROMPT`) can be modified in *extract_dataset/models.py*; they are used by all backends.
 
 **Requirements**  
 - Ollama LLM (latest version, installed and running locally or boxed)   

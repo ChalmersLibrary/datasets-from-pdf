@@ -1,14 +1,10 @@
 from __future__ import annotations
-import json
 import os
 import time
 from pathlib import Path
 import requests
 
 from . import usage
-
-# Prompts and JSON parsing are shared with the Ollama backend so both behave the same.
-from .ollama import prompt, enrich_prompt, _parse_json_response
 
 
 def _load_env_file(path: Path) -> None:
@@ -78,26 +74,7 @@ def chat_completion(model: str, prompt: str, image_url: str | None = None,
     return (data["choices"][0]["message"]["content"] or "").strip()
 
 
-def enrich_dataset_record(model: str, record: dict, fetched_text: str) -> dict:
-    """Re-query vLLM with fetched page content to enrich a single dataset record."""
-    user_prompt = (
-        f"Current dataset record:\n{json.dumps(record, ensure_ascii=False)}\n\n"
-        f"---BEGIN FETCHED PAGE---\n{fetched_text}\n---END FETCHED PAGE---\n\n"
-        "Return the updated dataset record as JSON."
-    )
-    raw = chat_completion(model, user_prompt, system=enrich_prompt,
-                          response_format={"type": "json_object"})
-    enriched = _parse_json_response(raw, fallback=record)
-    return {**record, **enriched}
-
-
-def query_vllm(model: str, section_name: str, section_text: str) -> dict:
-    """Send a section to vLLM and parse the JSON response."""
-    user_prompt = (
-        f"Section: {section_name}\n\n"
-        f"---BEGIN TEXT---\n{section_text}\n---END TEXT---\n\n"
-        "Extract all datasets as specified."
-    )
-    raw = chat_completion(model, user_prompt, system=prompt,
-                          response_format={"type": "json_object"})
-    return _parse_json_response(raw)
+def complete(model: str, system: str, user: str) -> str:
+    """Send a system + user prompt to the vLLM/LiteLLM server (JSON mode) and return the raw response text."""
+    return chat_completion(model, user, system=system,
+                           response_format={"type": "json_object"})
